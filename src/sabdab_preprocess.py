@@ -11,20 +11,20 @@ import glob
 import numpy as np
 import csv
 
-from protein_embedding import find_sequence, ProteinEmbedding
+from abmap_embed import find_sequence, ProteinEmbedding
 
 import psico.fullinit
 from pymol import cmd
 
 
-def init(dev_num, c_type, region):
+def init(dev_num, c_type, region, which_set):
     global chain_type, prot_region
     chain_type = c_type
     prot_region = region
 
     global data_path, id_pairs_path
-    data_path = '/data/cb/rsingh/work/antibody/ci_data/raw/sabdab_pure_042522/sabdab_dataset'
-    id_pairs_path = '/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/all_pairs_set1.p'
+    data_path = '../data/raw/sabdab/sabdab_dataset'
+    id_pairs_path = '../data/processed/sabdab/all_pairs_{}.p'.format(which_set)
 
 
 def work_parallel(idx_pair):
@@ -137,7 +137,7 @@ def work_parallel(idx_pair):
 
 
 def generate_id_pairs(args):
-    valid_ids_path = '/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/valid_ids_set2.txt'
+    valid_ids_path = '../data/processed/sabdab/valid_ids_{}.txt'.format(args.set)
 
     # saving perms
     with open(valid_ids_path, 'r') as f:
@@ -145,7 +145,7 @@ def generate_id_pairs(args):
     perms = list(combinations(valid_ids, 2))
     random.shuffle(perms)
     
-    with open('/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/all_pairs_set2.p', 'wb') as f:
+    with open('../data/processed/sabdab/all_pairs_{}.p'.format(args.set), 'wb') as f:
         pickle.dump(perms, f)
 
     print('DONE!')
@@ -162,6 +162,7 @@ if __name__ == "__main__":
     parser.add_argument("--chunk_size", help="chunk size for each processing step", type=int, default=1)
     parser.add_argument("--region", help="region of the protein sequence that we're processing", type=str)
     parser.add_argument("--chain_type", help="Which chain to process: H or L", type=str, choices = ["H", "L"])
+    parser.add_argument("--set", help="Creating set1 or set2 dataset", type=str, choices = ["set1", "set2"])
     parser.add_argument("--extra", help="put this as the LAST option and arbitrary space-separated key=val pairs after that", type=str, nargs='*')
 
     args = parser.parse_args()
@@ -179,7 +180,7 @@ if __name__ == "__main__":
         sample_n = 110000
 
         # load the pairs:
-        all_pairs_path = '/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/all_pairs_set1.p'
+        all_pairs_path = '/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/all_pairs_{}.p'.format(args.set)
         with open(all_pairs_path, 'rb') as f:
             all_pairs = pickle.load(f)
         n_pairs = all_pairs[:sample_n]
@@ -190,21 +191,23 @@ if __name__ == "__main__":
         from multiprocessing import get_context
 
         tm_scores = set()
-        with get_context('spawn').Pool(processes=args.num_processes, initializer=init, initargs=[args.device_num, args.chain_type, args.region]) as p:
+        with get_context('spawn').Pool(processes=args.num_processes, initializer=init, 
+                                       initargs=[args.device_num, args.chain_type, args.region, args.set]) as p:
             for result in tqdm(p.imap_unordered(work_parallel, n_pairs, chunksize=args.chunk_size), total=len(n_pairs)):
                 tm_scores.add(result)
 
+                # to save intermediate results. Comment out as necessary
                 if len(tm_scores)%10000 == 0:
                     with open('../results/CDR{}{}_pairs_{}.p'.format(args.chain_type, args.region, len(tm_scores)), 'wb') as f:
                         pickle.dump(tm_scores, f)
-                # tm_scores.append(result)
+
 
         tm_scores = list(tm_scores)
         tm_scores.sort(key=lambda x: x[0])
 
         # save the results into a csv file
         # save_count, num_pairs = 0, 100000
-        with open('../results/set1_CDR{}_{}_pair_scores_100k.csv'.format(args.region, args.chain_type), 'w', encoding='UTF8') as f:
+        with open('../results/{}_CDR{}_{}_pair_scores_100k.csv'.format(args.set, args.region, args.chain_type), 'w', encoding='UTF8') as f:
             writer = csv.writer(f)
             writer.writerow(['pdb_id1', 'pdb_id2', 'tm_score', 'rmsd'])
             for i in range(len(tm_scores)):

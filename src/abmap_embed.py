@@ -14,7 +14,7 @@ import sys
 sys.path.append('..')
 
 import base_config
-from utils import get_boolean_mask, diff_normalize
+from utils import get_boolean_mask, find_sequence
 from mutate import generate_mutation
 from embed import embed_sequence, reload_models_to_device #, load_model
 from model import MultiTaskLossWrapper
@@ -207,42 +207,6 @@ class ProteinEmbedding:
         return cdr_embed
 
 
-
-def find_sequence(dataset = 'sabdab_all', pdb_id = ''):
-    """
-    given a dataset, find the heavy and light chain sequences
-    """
-
-    if dataset == 'sabdab_all':
-        path = '/data/cb/rsingh/work/antibody/ci_data/raw/sabdab_all/sequences'
-    elif dataset == 'sabdab_pure':
-        path = '/data/cb/rsingh/work/antibody/ci_data/raw/sabdab_pure_042522/sabdab_dataset'
-
-    prot_path = os.path.join(path, pdb_id, "sequence")
-
-    # reading the heavy chain sequence
-    h = glob.glob(prot_path+"/"+pdb_id+"_*_VH.fa")
-    h1 = [a for a in h if "H_VH.fa" in a]
-    if len(h1)> 0:
-        vhfile = h1[0]
-    else:
-        vhfile = h[0]
-
-    with open(vhfile, 'r') as f:
-        vh_seq = f.read().splitlines()[1]
-
-    # reading the light chain sequence
-    l = glob.glob(prot_path+"/"+pdb_id+"_*_VL.fa")
-    l1 = [a for a in l if "L_VL.fa" in a]
-    if len(l1)> 0:
-        vlfile = l1[0]
-    else:
-        vlfile = l[0]
-
-    with open(vlfile, 'r') as g:
-        vl_seq = g.read().splitlines()[1]
-
-    return (vh_seq, vl_seq)
 
 def get_valid_ids():
     f = open('/data/cb/rsingh/work/antibody/ci_data/raw/sabdab_all/valid_ids.txt', 'w')
