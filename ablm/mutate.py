@@ -50,3 +50,24 @@ def generate_mutation(sequence, mask, p=0.5, mut_type = "cat1"):
 
     mutated_seq = "".join(seq)
     return mutated_seq
+
+def generate_mutation_cov(sequence, mask, p=0.5, mut_type = "cat2"):
+
+    if mut_type == "cat1":
+        mutate_dict = mutate_cat1
+    elif mut_type == "cat2":
+        mutate_dict = mutate_cat2
+
+    seq = list(sequence)
+
+    # mutation happens here:
+    for i, mask_bool in enumerate(mask):
+        rand_num = random.uniform(0, 1)
+        if mask_bool and rand_num >= p:
+            seq[i] = random.choice(mutate_dict[seq[i]])
+
+    # insertion/deletion in the CDR region based on their lengths
+    # TO-DO here
+
+    mutated_seq = "".join(seq)
+    return mutated_seq

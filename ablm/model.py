@@ -91,16 +91,9 @@ class AbMAPAttn(nn.Module):
 
 
     def forward(self, x1, x2, x1_mask, x2_mask, task, return1 = False, return2 = False, return3 = False, task_specific = False):
-        # PLEASE UNCOMMENT THIS!!!!!!
         if x1.shape[-1] > 6000:
             x1, x1_pos = x1[:,:,-4-self.embed_dim:-4], x1[:,:,-4:]
             x2, x2_pos = x2[:,:,-4-self.embed_dim:-4], x2[:,:,-4:]
-
-        # PLEASE COMMENT THIS!!!!!!
-        # if x1.shape[-1] > 6000:
-        #     x1 = x1[:,:,-self.embed_dim:]
-        #     x2 = x2[:,:,-self.embed_dim:]
-
         else:
             x1, x1_pos = x1[:,:,:-4], x1[:,:,-4:]
             x2, x2_pos = x2[:,:,:-4], x2[:,:,-4:]
@@ -119,7 +112,9 @@ class AbMAPAttn(nn.Module):
         # ADD POSITIONAL ENCODING HERE:
         x1, x2 = torch.add(x1, self.posenc(x1)), torch.add(x2, self.posenc(x2))
 
-        # PLEASE UNCOMMENT THIS!!!!!!
+        # x1 = x1 - x1_pos[:,:,0:1].repeat(1,1,x1.shape[-1]) + x1_pos[:,:,2:3].repeat(1,1,x1.shape[-1])
+        # x2 = x2 - x2_pos[:,:,0:1].repeat(1,1,x2.shape[-1]) + x2_pos[:,:,2:3].repeat(1,1,x2.shape[-1])
+
         x1 = torch.cat([x1, x1_pos], dim=-1)
         x2 = torch.cat([x2, x2_pos], dim=-1)
 
@@ -254,10 +249,10 @@ class AbMAPLSTM(nn.Module):
 
 
 class MultiTaskLossWrapper(nn.Module):
-    def __init__(self, task_num, init_alpha):
+    def __init__(self, task_num):
         super(MultiTaskLossWrapper, self).__init__()
         self.task_num = task_num
-        self.weights = nn.Parameter(torch.tensor(init_alpha)) # if -2.0, alpha = e^2 = 7.xx
+        self.weights = nn.Parameter(torch.tensor(0.0)) # if -2.0, alpha = e^2 = 7.xx
         self.loss_fn = nn.MSELoss()
         self.loss_s, self.loss_f = None, None
         self.alpha = None
