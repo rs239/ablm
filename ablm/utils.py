@@ -11,79 +11,6 @@ from matplotlib import pyplot as plt
 import os, time, tempfile, json
 
 
-def get_free_gpu():
-    fname = tempfile.mkstemp(prefix="AB1")[1]
-
-    os.system(f"/data/cb/rsingh/miniconda3/envs/antibody/bin/gpustat --json > {fname}")
-
-    time.sleep(2)
-
-    #print(fname)
-
-    jobj = json.load(open(fname,'rt'))
-
-    gpuutil1 = sorted([ (d['utilization.gpu'], d['memory.used'], d['index']) for d in jobj['gpus'] ])
-
-    gpuutil = [(a,b,c) for a,b,c in gpuutil1 if b < 16000] #a < 70
-    #print(gpuutil, jobj["gpus"])
-    os.system(f"rm -f {fname}")
-
-    if len(gpuutil) > 0: # and gpuutil[0][0] < 30:
-        cuda_device = gpuutil[0][2]
-        print('Free gpu id: ', cuda_device)
-        return cuda_device
-    else:
-        print('No free gpu')
-        return -1
-
-
-def scatter_plot(comb, emb_type):
-
-    tms_list, dot_list, points_list = [], [], []
-    for id1, id2, tms in tqdm(comb):
-
-        emb1 = pickle.load(open(id1, 'rb')).cpu()
-        emb2 = pickle.load(open(id2, 'rb')).cpu()
-
-        x1 = torch.mean(emb1, dim=0)
-        x2 = torch.mean(emb2, dim=0)
-
-        x1 = x1 / torch.norm(x1)
-        x2 = x2 / torch.norm(x2)
-
-        cos_sim = torch.dot(x1, x2).item()
-
-        tms_list.append(tms)
-        dot_list.append(cos_sim)
-        points_list.append((tms, cos_sim))
-
-    sorted_pairs = sorted(points_list, key=lambda x:x[0], reverse=False)
-
-    split_arrays = np.array_split(sorted_pairs, 10)
-
-    means = []
-    for bucket in split_arrays:
-        temp = []
-        for tms, dot in bucket:
-            temp.append(dot)
-        means.append(np.mean(temp))
-
-    bucket_fig = '/net/scratch3/scratch3-3/chihoim/figures/bucket_{}.png'.format(emb_type)
-    plt.plot(means)
-    plt.xlabel("TM Score Bucket")
-    plt.ylabel("Avg Dot Product")
-    plt.savefig(bucket_fig, bbox_inches='tight')
-
-    plt.clf()
-
-    scatter_fig = '/net/scratch3/scratch3-3/chihoim/figures/scatter_{}.png'.format(emb_type)
-    plt.scatter(dot_list, tms_list)
-    plt.xlabel("Cosine Similarity (Dot Product)")
-    plt.ylabel("TM Score")
-    plt.savefig(scatter_fig, bbox_inches='tight')
-
-    plt.clf()
-
 
 def evaluate_spearman(pred, target):
     if torch.is_tensor(pred):
@@ -93,12 +20,6 @@ def evaluate_spearman(pred, target):
     rho, pval = spearmanr(pred, target)
     return rho
 
-
-def diff_normalize(mutated, base, dim = (1,2)):
-    diff_matrix = base - mutated
-    # print(diff_matrix.shape)
-    norm_diff = torch.norm(diff_matrix.cpu(), dim=dim)
-    return norm_diff/torch.norm(base)
 
 
 def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0):
@@ -130,7 +51,7 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0):
                 all_regions[chain_type][i][1] += 1
 
     # change temp_path to a folder you'd like to save your ANARCI file to
-    temp_path = "/net/scratch3.mit.edu/scratch3-3/chihoim/misc/temp{}".format(fold)
+    temp_path = "../data/anarci_files/temp{}".format(fold)
     if not os.path.isdir(temp_path):
         os.mkdir(temp_path)
     

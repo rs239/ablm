@@ -180,7 +180,7 @@ if __name__ == "__main__":
         sample_n = 110000
 
         # load the pairs:
-        all_pairs_path = '/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/all_pairs_{}.p'.format(args.set)
+        all_pairs_path = '../data/processed/sabdab/all_pairs_{}.p'.format(args.set)
         with open(all_pairs_path, 'rb') as f:
             all_pairs = pickle.load(f)
         n_pairs = all_pairs[:sample_n]
@@ -207,7 +207,7 @@ if __name__ == "__main__":
 
         # save the results into a csv file
         # save_count, num_pairs = 0, 100000
-        with open('../results/{}_CDR{}_{}_pair_scores_100k.csv'.format(args.set, args.region, args.chain_type), 'w', encoding='UTF8') as f:
+        with open('../data/processed/sabdab/{}_CDR{}_{}_pair_scores_100k.csv'.format(args.set, args.region, args.chain_type), 'w', encoding='UTF8') as f:
             writer = csv.writer(f)
             writer.writerow(['pdb_id1', 'pdb_id2', 'tm_score', 'rmsd'])
             for i in range(len(tm_scores)):
