@@ -12,6 +12,7 @@ import os, time, tempfile, json
 
 
 
+
 def evaluate_spearman(pred, target):
     if torch.is_tensor(pred):
         pred = pred.detach().cpu().numpy()
@@ -22,7 +23,8 @@ def evaluate_spearman(pred, target):
 
 
 
-def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0):
+def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
+                     anarci_dir='../data/anarci_files'):
     chothia_nums = {'H': [[26, 32], [52, 56], [96, 101]],
                     'L': [[26, 32], [50, 52], [91, 96]]}
 
@@ -51,19 +53,19 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0):
                 all_regions[chain_type][i][1] += 1
 
     # change temp_path to a folder you'd like to save your ANARCI file to
-    temp_path = "../data/anarci_files/temp{}".format(fold)
-    if not os.path.isdir(temp_path):
-        os.mkdir(temp_path)
+    # temp_path = "/net/scratch3.mit.edu/scratch3-3/chihoim/misc/temp{}".format(fold)
+    if not os.path.isdir(anarci_dir):
+        os.mkdir(anarci_dir)
     
-    temp_name = os.path.join(temp_path, 'temp{}'.format(dev))
+    temp_name = os.path.join(anarci_dir, 'temp{}'.format(dev))
 
     os.system('ANARCI -i {} --csv -o {} -s {}'.format(sequence, temp_name, scheme))
     
     regions = all_regions[chain_type]
     if chain_type == 'H':
-        file_name = glob.glob(temp_path+'/'+'*{}_H.csv'.format(dev))[0]
+        file_name = glob.glob(anarci_dir+'/'+'*{}_H.csv'.format(dev))[0]
     else:
-        file_name = glob.glob(temp_path+'/'+'*{}_KL.csv'.format(dev))[0]
+        file_name = glob.glob(anarci_dir+'/'+'*{}_KL.csv'.format(dev))[0]
 
     try:
         temp = pd.read_csv(file_name)
@@ -119,3 +121,37 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0):
         cdr_mask[h_cdr_start : h_cdr_end + 1] = r+1
 
     return cdr_mask
+
+
+def find_sequence(pdb_id = ''):
+    """
+    given a dataset, find the heavy and light chain sequences
+    """
+
+    path = '../data/raw/sabdab/sabdab_dataset'
+
+    prot_path = os.path.join(path, pdb_id, "sequence")
+
+    # reading the heavy chain sequence
+    h = glob.glob(prot_path+"/"+pdb_id+"_*_VH.fa")
+    h1 = [a for a in h if "H_VH.fa" in a]
+    if len(h1)> 0:
+        vhfile = h1[0]
+    else:
+        vhfile = h[0]
+
+    with open(vhfile, 'r') as f:
+        vh_seq = f.read().splitlines()[1]
+
+    # reading the light chain sequence
+    l = glob.glob(prot_path+"/"+pdb_id+"_*_VL.fa")
+    l1 = [a for a in l if "L_VL.fa" in a]
+    if len(l1)> 0:
+        vlfile = l1[0]
+    else:
+        vlfile = l[0]
+
+    with open(vlfile, 'r') as g:
+        vl_seq = g.read().splitlines()[1]
+
+    return (vh_seq, vl_seq)
