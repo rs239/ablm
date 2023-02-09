@@ -153,6 +153,42 @@ def generate_id_pairs(args):
     return
 
 
+def save_sabdab_cdrs(args):
+
+    pdb_ids_path = "/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/valid_ids_all.txt"
+    with open(pdb_ids_path, 'r') as f:
+        pdb_ids = f.read().splitlines()
+
+    results_dict_H, results_dict_L = dict(), dict()
+    for pdb_id in tqdm(pdb_ids):
+        seq_h, seq_l = find_sequence(dataset='sabdab_pure', pdb_id=pdb_id)
+
+        prot_h = ProteinEmbedding(seq_h, 'H')
+        prot_h.create_cdr_mask()
+        prot_l = ProteinEmbedding(seq_l, 'L')
+        prot_l.create_cdr_mask()
+
+        cdrs_H = ["", "", ""]
+        for i in range(len(prot_h.cdr_mask)):
+            for q in (1, 2, 3):
+                if prot_h.cdr_mask[i] == q:
+                    cdrs_H[q-1] += seq_h[i]
+
+        cdrs_L = ["", "", ""]
+        for i in range(len(prot_l.cdr_mask)):
+            for q in (1, 2, 3):
+                if prot_l.cdr_mask[i] == q:
+                    cdrs_L[q-1] += seq_l[i]
+
+        results_dict_H[pdb_id] = cdrs_H
+        results_dict_L[pdb_id] = cdrs_L
+
+    with open('/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/sabdab_cdrH_strs.p', 'wb') as p:
+        pickle.dump(results_dict_H, p)
+    with open('/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/sabdab_cdrL_strs.p', 'wb') as p:
+        pickle.dump(results_dict_L, p)
+
+
 def main_sabdab(args, orig_embed = False):
 
     pdb_ids_path = "../data/processed/sabdab/valid_ids_{}.txt".format(args.set)
@@ -219,7 +255,64 @@ def main_sabdab(args, orig_embed = False):
             with open(os.path.join(out_path, file_name), 'wb') as fh:
                 print("Saving", pdb_id)
                 pickle.dump(cdr_embed, fh)
-        
+
+
+
+def make_sabdab_features(args):
+    reload_models_to_device(args.device_num)
+
+    device = torch.device(base_config.device if torch.cuda.is_available() else "cpu")
+    
+    chain_type = args.chain_type
+    out_dir = "/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/set1_features"
+    embed_path = "/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/cdrembed_maskaug4/beplerberger"
+    pdb_ids_path = "/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/valid_ids_set1.txt"
+    with open(pdb_ids_path, 'r') as f:
+        pdb_ids = f.read().splitlines()
+
+    # Load our pretrained AbNet Model
+    from model import AntibodyNetMultiAttn
+    pretrained = AntibodyNetMultiAttn(embed_dim=2200, mid_dim2=1024, mid_dim3=512,
+                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(device)
+    pretrained_path = "../model_ckpts/091522_bb_newnum_{}/beplerberger_epoch50.pt".format(chain_type)
+    checkpoint = torch.load(pretrained_path, map_location=device)
+    pretrained.load_state_dict(checkpoint['model_state_dict'])
+    pretrained.eval()
+    print("Loaded the pre-trained model!")
+
+    k = 100
+    out_path = os.path.join(out_dir, 'beplerberger', chain_type)
+    for pdb_id in tqdm(pdb_ids):
+        file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', chain_type, k)
+        with open(os.path.join(embed_path, file_name), 'rb') as f:
+            prot_emb = pickle.load(f)
+
+        cdr_embed = torch.unsqueeze(prot_emb, dim=0) # create the batch dimension (singleton)
+        cdr_embed = cdr_embed.to(device)
+
+        # create and save STRUCTURE specific feature:
+        with torch.no_grad():
+            feat_task, _ = pretrained(cdr_embed, cdr_embed, None, None, 0, task_specific=True)
+        assert feat_task.shape[-1] == 512
+        with open(os.path.join(out_path, "{}_struc_{}.p".format(pdb_id, chain_type)), 'wb') as p:
+            pickle.dump(torch.squeeze(feat_task), p)
+
+        # create and save FUNCTION specific feature:
+        with torch.no_grad():
+            feat_task, _ = pretrained(cdr_embed, cdr_embed, None, None, 1, task_specific=True)
+        assert feat_task.shape[-1] == 512
+        with open(os.path.join(out_path, "{}_func_{}.p".format(pdb_id, chain_type)), 'wb') as p:
+            pickle.dump(torch.squeeze(feat_task), p)
+
+        # create and save INTERMEDIATE n' x k feature, before Transformer:
+        with torch.no_grad():
+            feat_interm, _ = pretrained(cdr_embed, cdr_embed, None, None, None, return2=True)
+        assert feat_interm.shape[-1] == 256
+        with open(os.path.join(out_path, "{}_interm_{}.p".format(pdb_id, chain_type)), 'wb') as p:
+            pickle.dump(torch.squeeze(feat_interm), p)
+
+    return
+
 
 
 
