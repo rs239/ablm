@@ -212,6 +212,77 @@ def sample_from_allpairs(num_sample=100000):
     samp_h.to_csv(os.path.join(save_dir, 'libraseq_pairs_H_Set1_100k.csv'), index=False)
     samp_l.to_csv(os.path.join(save_dir, 'libraseq_pairs_L_Set1_100k.csv'), index=False)
 
+
+def main_libra(args, orig_embed=False):
+    reload_models_to_device(args.device_num)
+
+    # seqs_path = "/data/cb/rsingh/work/antibody/ci_data/raw/libraseq/libraseq_standardized.csv"
+    seqs_path = "../data/processed/libraseq/libraseq_standardized_Set1.csv"
+    out_folder = '../data/processed/libraseq/cdrembed_maskaug4'
+    # out_folder = '/data/cb/rsingh/work/antibody/ci_data/processed/libraseq/original_embeddings'
+
+    df = pd.read_csv(seqs_path, keep_default_na=False)
+    ids_to_drop = []
+
+    k = 100
+    for index, row in tqdm(df.iterrows(), total=df.shape[0]):
+        # if index == 10:
+        #     break
+        seq_h, seq_l = row['vh_seq'], row['vl_seq']
+
+        for seq, chain_type in [(seq_h, 'H'), (seq_l, 'L')]:
+            prot_embed = ProteinEmbedding(seq, chain_type, dev=args.device_num, fold='y')
+            p_id = row['id']+'_cat2_{}_k{}.p'.format(chain_type, k)
+
+            for model_typ in ['esm1b']:
+                out_path = os.path.join(out_folder, model_typ)
+                if not os.path.isdir(out_path):
+                    os.mkdir(out_path)
+
+                # check if file exists:
+                # if os.path.exists(os.path.join(out_path, p_id)):
+                #     continue
+
+                try:
+                    prot_embed.embed_seq(embed_type = model_typ)
+
+                    if orig_embed is True:
+                        out_folder = "../data/processed/libraseq/original_embeddings"
+                        out_path = os.path.join(out_folder, model_typ)
+
+                        file_name = '{}_{}_orig.p'.format(row['id'], prot_embed.chain_type)
+                        with open(os.path.join(out_path, file_name), 'wb') as fh:
+                            print("Saving", row['id'])
+                            pickle.dump(prot_embed.embedding, fh)
+                        continue
+
+                    # cdr_embed = prot_embed.embedding     
+
+                    prot_embed.create_cdr_mask()
+
+                    kmut_matr = prot_embed.create_kmut_matrix(num_muts=k, embed_type=model_typ)
+                    cdr_embed = prot_embed.create_cdr_embedding(kmut_matr, sep = False, mask = True)
+
+                    # --------------------------------------------------
+                    # TRYING TO CONCATENATE NOMUT! (PROTBERT ONLY)
+                    # cdr_embed_nomut = prot_embed.create_cdr_embedding_nomut().cuda(args.device_num)
+                    # cdr_embed = torch.cat((cdr_embed_nomut, cdr_embed.cuda(args.device_num)), dim=-1)
+                    # --------------------------------------------------
+
+
+                    with open(os.path.join(out_path, p_id), 'wb') as f:
+                        pickle.dump(cdr_embed, f)
+
+                except:
+                    ids_to_drop.append(index)
+
+
+    ids_to_drop = list(set(ids_to_drop))
+    print("Seqs from these indices did not work...")
+    print(ids_to_drop)
+
+
+
 if __name__ == "__main__":
     # create_standardized_dataset()
     # divide_sets()

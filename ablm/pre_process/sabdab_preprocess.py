@@ -11,7 +11,8 @@ import glob
 import numpy as np
 import csv
 
-from abmap_embed import find_sequence, ProteinEmbedding
+from abmap_embed import ProteinEmbedding
+from utils import find_sequence
 
 import psico.fullinit
 from pymol import cmd
@@ -152,6 +153,75 @@ def generate_id_pairs(args):
     return
 
 
+def main_sabdab(args, orig_embed = False):
+
+    pdb_ids_path = "../data/processed/sabdab/valid_ids_{}.txt".format(args.set)
+    with open(pdb_ids_path, 'r') as f:
+        pdb_ids = f.read().splitlines()
+    print(len(pdb_ids))
+
+    out_folder = "../data/processed/sabdab/cdrembed_maskaug4"
+
+    # embed_type = 'beplerberger'
+    # embed_type = 'protbert'
+    embed_type = 'esm1b'
+    # embed_type = 'tape'
+
+    reload_models_to_device(args.device_num)
+
+    k=100
+    for c_type in ['H', 'L']:
+        for pdb_id in tqdm(pdb_ids):
+
+            # file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
+            # if os.path.exists(os.path.join(out_folder, embed_type, file_name)):
+            #     continue
+
+
+            seq_h, seq_l = find_sequence(dataset='sabdab_pure', pdb_id = pdb_id)
+            seq = seq_h if c_type == 'H' else seq_l
+            prot_embed = ProteinEmbedding(seq, c_type, fold='x')
+
+            out_path = os.path.join(out_folder, embed_type)
+            if not os.path.isdir(out_path):
+                os.mkdir(out_path)
+
+            prot_embed.embed_seq(embed_type = embed_type)
+
+            if orig_embed is True:
+                out_folder = "../data/processed/sabdab/original_embeddings"
+                out_path = os.path.join(out_folder, embed_type)
+
+                file_name = 'sabdab_{}_{}_orig.p'.format(pdb_id, prot_embed.chain_type)
+                with open(os.path.join(out_path, file_name), 'wb') as fh:
+                    print("Saving", pdb_id)
+                    pickle.dump(prot_embed.embedding, fh)
+                continue
+
+            # cdr_embed = prot_embed.embedding
+
+            try:
+                prot_embed.create_cdr_mask()
+            except:
+                print("pdb id {} didn't work...".format(pdb_id))
+                continue
+
+            kmut_matr_h = prot_embed.create_kmut_matrix(num_muts=k, embed_type=embed_type)
+            cdr_embed = prot_embed.create_cdr_embedding(kmut_matr_h, sep = False, mask = True)
+
+            # --------------------------------------------------
+            # TRYING TO CONCATENATE NOMUT! (PROTBERT ONLY)
+            # cdr_embed_nomut = prot_embed.create_cdr_embedding_nomut().cuda(args.device_num)
+            # cdr_embed = torch.cat((cdr_embed_nomut, cdr_embed.cuda(args.device_num)), dim=-1)
+            # --------------------------------------------------
+
+            file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
+            with open(os.path.join(out_path, file_name), 'wb') as fh:
+                print("Saving", pdb_id)
+                pickle.dump(cdr_embed, fh)
+        
+
+
 
 if __name__ == "__main__":
     import argparse
@@ -198,7 +268,7 @@ if __name__ == "__main__":
 
                 # to save intermediate results. Comment out as necessary
                 if len(tm_scores)%10000 == 0:
-                    with open('../results/CDR{}{}_pairs_{}.p'.format(args.chain_type, args.region, len(tm_scores)), 'wb') as f:
+                    with open('../data/processed/sabdab/CDR{}{}_pairs_{}.p'.format(args.chain_type, args.region, len(tm_scores)), 'wb') as f:
                         pickle.dump(tm_scores, f)
 
 
