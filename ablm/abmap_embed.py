@@ -205,26 +205,6 @@ class ProteinEmbedding:
         cdr_embed = self.create_cdr_embedding(kmut_matr_h, sep = seperator, mask = mask)
 
         return cdr_embed
-
-
-
-def get_valid_ids():
-    f = open('/data/cb/rsingh/work/antibody/ci_data/raw/sabdab_all/valid_ids.txt', 'w')
-    valid_list = []
-    path = '/data/cb/rsingh/work/antibody/ci_data/raw/sabdab_all/sequences'
-    pdb_ids = os.listdir(path)
-    for pdb_id in tqdm(pdb_ids):
-        try:
-            vhs, vls = find_sequence(pdb_id = pdb_id)
-            prot_embed_h = ProteinEmbedding(vhs, 'H')
-            prot_embed_l = ProteinEmbedding(vls, 'L')
-            prot_embed_h.create_cdr_mask()
-            prot_embed_l.create_cdr_mask()
-            valid_list.append(pdb_id)
-        except:
-            pass
-    f.write('\n'.join(valid_list))
-    f.close()
             
 
 

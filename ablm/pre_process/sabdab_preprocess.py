@@ -137,6 +137,24 @@ def work_parallel(idx_pair):
     return (idx, tm_score, rmsd)
 
 
+def get_valid_ids():
+    with open('../data/processed/sabdab/valid_ids_all.txt', 'w') as f:
+        valid_list = []
+        path = '../data/raw/sabdab/sabdab_dataset'
+        pdb_ids = os.listdir(path)
+        for pdb_id in tqdm(pdb_ids):
+            try:
+                vhs, vls = find_sequence(pdb_id = pdb_id)
+                prot_embed_h = ProteinEmbedding(vhs, 'H')
+                prot_embed_l = ProteinEmbedding(vls, 'L')
+                prot_embed_h.create_cdr_mask()
+                prot_embed_l.create_cdr_mask()
+                valid_list.append(pdb_id)
+            except:
+                pass
+        f.write('\n'.join(valid_list))
+
+
 def generate_id_pairs(args):
     valid_ids_path = '../data/processed/sabdab/valid_ids_{}.txt'.format(args.set)
 
