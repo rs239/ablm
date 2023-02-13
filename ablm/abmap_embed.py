@@ -16,7 +16,7 @@ sys.path.append('..')
 import base_config
 from utils import get_boolean_mask, find_sequence
 from mutate import generate_mutation
-from embed import embed_sequence, reload_models_to_device #, load_model
+from plm_embed import embed_sequence, reload_models_to_device #, load_model
 from model import MultiTaskLossWrapper
 
 import torch

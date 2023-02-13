@@ -87,7 +87,7 @@ def my_collate(data):
 
 
 def create_dataloader_sabdab(data_dir, batch_size, emb_type, mut_type, chain_type, region):
-    parent_dir = os.path.join("/data/cb/rsingh/work/antibody/ci_data/processed", 'sabdab_pure_042522')
+    parent_dir = '../data/processed/sabdab'
 
     embed_dir = os.path.join(parent_dir, data_dir, emb_type)
 
@@ -132,7 +132,7 @@ def create_dataloader_sabdab(data_dir, batch_size, emb_type, mut_type, chain_typ
 
 
 def create_dataloader_libra(data_dir, batch_size, emb_type, mut_type, chain_type):
-    parent_dir = os.path.join("/data/cb/rsingh/work/antibody/ci_data/processed", 'libraseq')
+    parent_dir = '../data/processed/libraseq'
 
     embed_dir = os.path.join(parent_dir, data_dir, emb_type)
     data_path = os.path.join(parent_dir, 'libraseq_pairs_{}_Set1_100k.csv'.format(chain_type))
@@ -199,14 +199,15 @@ class DesautelsDataset(Dataset):
 
 def create_dataloader_desautels(batch_size, traintest_split = 0.2, onehot=False, embed_type='bb'):
     np.random.seed(1) # for reproducability
+    dataset_path = '../data/processed/desautels'
 
     if onehot:
-        dataset_path = '/data/cb/rsingh/work/antibody/ci_data/processed/desautels/desautels_onehot.h5'
+        dataset_path = os.path.join(dataset_path, 'desautels_onehot.h5')
     else:
         if embed_type in ['ours_bb', 'ours_protbert', 'ours_esm1b']:
-            dataset_path = '/data/cb/rsingh/work/antibody/ci_data/processed/desautels/desautels_cdrembed_{}.h5'.format(embed_type)
+            dataset_path = os.path.join(dataset_path, 'desautels_cdrembed_{}.h5'.format(embed_type))
         else:
-            dataset_path = '/data/cb/rsingh/work/antibody/ci_data/processed/desautels/desautels_{}.h5'.format(embed_type)
+            dataset_path = os.path.join(dataset_path, 'desautels_{}.h5'.format(embed_type))
 
     score_cols = ['FoldX_Average_Whole_Model_DDG', 'FoldX_Average_Interface_Only_DDG',
                     'Statium', 'Sum_of_Rosetta_Flex_single_point_mutations',
@@ -217,8 +218,8 @@ def create_dataloader_desautels(batch_size, traintest_split = 0.2, onehot=False,
         dataset_H_all, dataset_L_all = f['H'], f['L']
 
         # load the label:
-        label_path = "/data/cb/rsingh/work/antibody/ci_data/processed/desautels/Desautels_m396_seqs.csv"
-        invalid_idx_path = "/data/cb/rsingh/work/antibody/ci_data/processed/desautels/invalid_idx.p"
+        label_path = os.path.join(dataset_path, "Desautels_m396_seqs.csv")
+        invalid_idx_path = os.path.join(dataset_path, "invalid_idx.p")
         labels_df = pd.read_csv(label_path)
 
         # identify all rows with NaN score values, and remove them

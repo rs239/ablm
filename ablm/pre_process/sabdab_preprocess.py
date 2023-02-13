@@ -173,13 +173,13 @@ def generate_id_pairs(args):
 
 def save_sabdab_cdrs(args):
 
-    pdb_ids_path = "/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/valid_ids_all.txt"
+    pdb_ids_path = "../data/processed/sabdab/valid_ids_all.txt"
     with open(pdb_ids_path, 'r') as f:
         pdb_ids = f.read().splitlines()
 
     results_dict_H, results_dict_L = dict(), dict()
     for pdb_id in tqdm(pdb_ids):
-        seq_h, seq_l = find_sequence(dataset='sabdab_pure', pdb_id=pdb_id)
+        seq_h, seq_l = find_sequence(pdb_id=pdb_id)
 
         prot_h = ProteinEmbedding(seq_h, 'H')
         prot_h.create_cdr_mask()
@@ -201,9 +201,9 @@ def save_sabdab_cdrs(args):
         results_dict_H[pdb_id] = cdrs_H
         results_dict_L[pdb_id] = cdrs_L
 
-    with open('/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/sabdab_cdrH_strs.p', 'wb') as p:
+    with open('../data/processed/sabdab/sabdab_cdrH_strs.p', 'wb') as p:
         pickle.dump(results_dict_H, p)
-    with open('/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/sabdab_cdrL_strs.p', 'wb') as p:
+    with open('../data/processed/sabdab/sabdab_cdrL_strs.p', 'wb') as p:
         pickle.dump(results_dict_L, p)
 
 
@@ -282,9 +282,9 @@ def make_sabdab_features(args):
     device = torch.device(base_config.device if torch.cuda.is_available() else "cpu")
     
     chain_type = args.chain_type
-    out_dir = "/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/set1_features"
-    embed_path = "/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/cdrembed_maskaug4/beplerberger"
-    pdb_ids_path = "/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522/valid_ids_set1.txt"
+    out_dir = "../data/processed/sabdab/{}_features".format(args.set)
+    embed_path = "../data/processed/sabdab/cdrembed_maskaug4/beplerberger"
+    pdb_ids_path = "..data/processed/sabdab/valid_ids_{}.txt".format(args.set)
     with open(pdb_ids_path, 'r') as f:
         pdb_ids = f.read().splitlines()
 

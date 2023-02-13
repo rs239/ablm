@@ -1,6 +1,10 @@
-from protein_embedding import ProteinEmbedding
+import os, sys
+
+sys.path.append('../ablm')
+
+from abmap_embed import ProteinEmbedding
 from model import AbMAPAttn
-from embed import reload_models_to_device
+from plm_embed import reload_models_to_device
 import torch
 from torch import nn
 
@@ -53,7 +57,7 @@ print("(from here onwards) default is mask = True")
 # Load pre-trained AbMAP (Bepler & Berger) Model
 model = AbMAPAttn(embed_dim=2200, mid_dim2=1024, mid_dim3=512, 
                    proj_dim=252, num_enc_layers=1, num_heads=16).to(device)
-pretrained_path = 'models/AbMAP_H_beplerberger_epoch50.pt'
+pretrained_path = '../pretrained_models/AbMAP_H_beplerberger_epoch50.pt'
 checkpoint = torch.load(pretrained_path)
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
