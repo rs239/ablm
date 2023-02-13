@@ -87,7 +87,8 @@ def my_collate(data):
 
 
 def create_dataloader_sabdab(data_dir, batch_size, emb_type, mut_type, chain_type, region):
-    parent_dir = '../data/processed/sabdab'
+    # parent_dir = '../data/processed/sabdab'
+    parent_dir = '/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522'
 
     embed_dir = os.path.join(parent_dir, data_dir, emb_type)
 
@@ -132,7 +133,8 @@ def create_dataloader_sabdab(data_dir, batch_size, emb_type, mut_type, chain_typ
 
 
 def create_dataloader_libra(data_dir, batch_size, emb_type, mut_type, chain_type):
-    parent_dir = '../data/processed/libraseq'
+    # parent_dir = '../data/processed/libraseq'
+    parent_dir = '/data/cb/rsingh/work/antibody/ci_data/processed/libraseq'
 
     embed_dir = os.path.join(parent_dir, data_dir, emb_type)
     data_path = os.path.join(parent_dir, 'libraseq_pairs_{}_Set1_100k.csv'.format(chain_type))
