@@ -7,43 +7,47 @@ from dscript.alphabets import Uniprot21
 import re
 
 
-# ds_model = ds_pre.get_pretrained()
-# torch.nn.init.normal_(bb_model.proj.weight)
-# bb_model.proj.bias = torch.nn.Parameter(torch.zeros(100))
 
-def reload_models_to_device(device_num=0):
+def reload_models_to_device(device_num=0, plm_type='beplerberger'):
     base_config.device = "cuda:{}".format(device_num)
     device = torch.device(base_config.device if torch.cuda.is_available() else "cpu")
     print(device)
 
     ######### Bepler & Berger ########
-    global bb_model
-    bb_model = ds_pre.get_pretrained("lm_v1")
-    bb_model = bb_model.cuda(device)
-    bb_model.eval()
+    if plm_type == 'beplerberger':
+        global bb_model
+        bb_model = ds_pre.get_pretrained("lm_v1")
+        bb_model = bb_model.cuda(device)
+        bb_model.eval()
 
     ######### ESM-1b ##########
-    # global esm_model, esm_batch_converter
-    # esm_model, esm_alphabet = torch.hub.load("facebookresearch/esm", "esm1b_t33_650M_UR50S")
-    # esm_batch_converter = esm_alphabet.get_batch_converter()
-    # esm_model = esm_model.cuda(device)
-    # esm_model.eval()
+    elif plm_type == 'esm1b':
+        global esm_model, esm_batch_converter
+        esm_model, esm_alphabet = torch.hub.load("facebookresearch/esm", "esm1b_t33_650M_UR50S")
+        esm_batch_converter = esm_alphabet.get_batch_converter()
+        esm_model = esm_model.cuda(device)
+        esm_model.eval()
 
     ######### TAPE ##########
-    # global tape_model, tape_tokenizer
-    # from tape import ProteinBertModel, TAPETokenizer
-    # tape_model = ProteinBertModel.from_pretrained('bert-base')
-    # tape_tokenizer = TAPETokenizer(vocab='iupac')
-    # tape_model = tape_model.cuda(device)
-    # tape_model.eval()
+    elif plm_type == 'tape':
+        global tape_model, tape_tokenizer
+        from tape import ProteinBertModel, TAPETokenizer
+        tape_model = ProteinBertModel.from_pretrained('bert-base')
+        tape_tokenizer = TAPETokenizer(vocab='iupac')
+        tape_model = tape_model.cuda(device)
+        tape_model.eval()
 
     ######### ProtBert #########
-    # from transformers import BertModel, BertTokenizer
-    # global protbert_tokenizer, protbert_model
-    # protbert_tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert", do_lower_case=False )
-    # protbert_model = BertModel.from_pretrained("Rostlab/prot_bert")
-    # protbert_model = protbert_model.cuda(device)
-    # protbert_model.eval()
+    elif plm_type == 'protbert':
+        from transformers import BertModel, BertTokenizer
+        global protbert_tokenizer, protbert_model
+        protbert_tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert", do_lower_case=False )
+        protbert_model = BertModel.from_pretrained("Rostlab/prot_bert")
+        protbert_model = protbert_model.cuda(device)
+        protbert_model.eval()
+
+    else:
+        raise ModuleNotFoundError(f"PLM {plm_type} not found...")
 
 
 def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, embed_model=None):

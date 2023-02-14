@@ -58,17 +58,9 @@ def init(dev_num):
     device_n = dev_num
 
     device = torch.device("cuda:{}".format(device_n) if torch.cuda.is_available() else "cpu")
-    
-    # global pretrained
-    # chain_type = 'H'
-    # pretrained = AbMAP(embed_dim=2200, lstm_layers=1).to(device)
-    # best_arch_path = '/net/scratch3.mit.edu/scratch3-3/chihoim/model_ckpts/best_pretrained'
-    # best_path = os.path.join(best_arch_path, 'multi_{}_best.pt'.format(chain_type))
-    # checkpoint = torch.load(best_path, map_location=device)
-    # pretrained.load_state_dict(checkpoint['model_state_dict'])
-    # pretrained.eval()
 
     reload_models_to_device(device_n)
+
 
 def work_parallel(pair):
     dev, seq = pair
@@ -80,20 +72,10 @@ def work_parallel(pair):
         return (None, None)
 
     k=50
-    prot.embed_seq('beplerberger')
-    kmut_matr_h = prot.create_kmut_matrix(num_muts=k, embed_type='beplerberger')
-    cdr_embed = prot.create_cdr_embedding(kmut_matr_h, sep = False, mask = True)
+
+    cdr_embed = prot.create_cdr_specific_embedding(embed_type='beplerberger', k=k)
 
     return (cdr_embed.detach().cpu().numpy(), seq)
-
-    # cdr_embed_batch = torch.unsqueeze(cdr_embed, dim=0).to(device_n)
-    # with torch.no_grad():
-    #     x, x_pos = cdr_embed_batch[:,:,-2204:-4], cdr_embed_batch[:,:,-4:]
-    #     x = pretrained.project(x)
-    #     x = torch.cat([x, x_pos], dim=-1)
-    #     feat = torch.squeeze(pretrained.recurrent(x, 0)).detach().cpu().numpy()
-
-    # return (feat, seq)
 
 
 def init_align(seq_samples):
@@ -103,8 +85,6 @@ def init_align(seq_samples):
 def parallel_align(pair_idxs):
     idx1, idx2 = pair_idxs
     seq1, seq2 = seqs_list[idx1][0], seqs_list[idx2][0]
-    # print("seq1", seq1)
-    # print("seq2", seq2)
     align_score = pairwise2.align.globalxx(seq1, seq2, score_only=True)
     return idx1, idx2, align_score
 
@@ -117,304 +97,6 @@ def unpad_embedding(embedding):
     
     return v3
 
-def predict_count_attn(args):
-
-    from model import AbMAPAttn, BrineyPredictorAttn
-    from sklearn import utils
-
-    device = torch.device("cuda:{}".format(args.device_num) if torch.cuda.is_available() else "cpu")
-
-    # Load our pretrained AbNet Model
-    pretrained = AbMAPAttn(embed_dim=2200, mid_dim2=1024, mid_dim3=512,
-                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(device)
-    chain_type = 'H'
-    best_arch_path = '/net/scratch3.mit.edu/scratch3-3/chihoim/model_ckpts/best_pretrained'
-    best_path = os.path.join(best_arch_path, 'bb_feat256_{}_best_newnum.pt'.format(chain_type))
-    checkpoint = torch.load(best_path, map_location=device)
-    pretrained.load_state_dict(checkpoint['model_state_dict'])
-    pretrained.eval()
-    print("Loaded the pre-trained model!")
-
-    # HYPERPARAMETERS:
-    num_epochs = 200
-    batch_size = 32
-    lr = 5e-4
-    save_every = 50
-
-    # Build Data Loader
-    # briney_root = "/data/cb/rsingh/work/antibody/ci_data/processed/briney_nature_2019/subjects_by_id"
-    # labels_total = []
-    # ids_list = os.listdir(briney_root)
-    # print(ids_list)
-    # idx_count = 0
-    # with h5py.File("/data/cb/rsingh/work/antibody/ci_data/processed/briney_nature_2019/all_subjs.h5", "w") as f:
-    #     dset_f = f.create_dataset('feats', (885422, 60, 256))
-    #     dset_l = f.create_dataset('labels', (885422,))
-
-    #     for id_ in ids_list:
-    #         print("Processing subject {} ...".format(id_))
-    #         g = glob.glob(os.path.join(briney_root, id_, '{}_*data.h5'.format(id_)))
-    #         if len(g) != 1:
-    #             assert False
-    #         data_path = g[0]
-    #         with h5py.File(data_path, 'r') as h:
-    #             labels = h['labels'][:]
-    #             labels_total.append(labels)
-
-    #             # for i in tqdm(range(1000)):
-    #             for i in tqdm(range(h['feats'].shape[0])):
-    #                 feature_np = h['feats'][i:i+1]
-    #                 unpad_idx = unpad_embedding(feature_np)
-    #                 if unpad_idx == 0:
-    #                     feature_tensor = torch.Tensor(feature_np).to(device)
-    #                 else:
-    #                     feature_tensor = torch.Tensor(feature_np[:, :unpad_idx, :]).to(device)
-
-    #                 with torch.no_grad():
-    #                     feature_tensor, _ = pretrained(feature_tensor, feature_tensor, None, None, None, return2=True)
-    #                 feature_tensor = torch.squeeze(feature_tensor, dim=0)
-
-    #                 feature_np = feature_tensor.detach().cpu().numpy()
-    #                 dset_f[idx_count, :unpad_idx, :] = feature_np
-
-    #                 idx_count += 1
-
-
-    #     labels_total = np.concatenate(labels_total, axis=0)
-    #     dset_l[:] = labels_total
-
-    # assert idx_count == len(labels_total)
-    # print("Total of {} data points saved".format(idx_count))
-
-    # return
-
-    # data_path = '/data/cb/rsingh/work/antibody/ci_data/processed/briney_nature_2019/subjects_by_id/326651/326651_n99623_data.h5'
-    data_path = '/data/cb/rsingh/work/antibody/ci_data/processed/briney_nature_2019/all_subjs.h5'
-    with h5py.File(data_path, 'r') as h:
-        feats, labels = h['feats'][:], h['labels'][:]
-        labels = np.log(labels)
-        labels = (labels > 1e-5).astype(float) # making a binary label
-        feats, labels = utils.shuffle(feats, labels)
-        print("converted h5py to numpy!")
-
-    train_idx, val_idx = 700000, 790000
-    train_loader_feat = DataLoader(feats[:train_idx], batch_size=batch_size)
-    train_loader_label = DataLoader(labels[:train_idx], batch_size=batch_size)
-    val_loader_feat = DataLoader(feats[train_idx:val_idx], batch_size=batch_size)
-    val_loader_label = DataLoader(labels[train_idx:val_idx], batch_size=batch_size)
-    test_loader_feat = DataLoader(feats[val_idx:], batch_size=batch_size)
-    test_loader_label = DataLoader(labels[val_idx:], batch_size=batch_size)
-    print("Created Dataloaders!")
-
-    # Construct Briney Predictor, Loss Func, Optimizer
-    model = BrineyPredictorAttn(input_dim = 256, mid_dim1 = 64, mid_dim2 = 16, mid_dim3 = 4).to(device)
-    # loss_fn = nn.MSELoss()
-    loss_fn = nn.BCELoss()
-    optimizer = opt.AdamW(model.parameters(), lr=lr)
-
-    for i in range(num_epochs):
-        # TRAINING!
-        model.train()
-        total_loss = 0
-        for batch_feats, batch_label in tqdm(zip(train_loader_feat, train_loader_label), total=len(train_loader_label)):
-            batch_feats = batch_feats.float().to(device)
-            batch_label = batch_label.float().to(device)
-
-            # create mask for transformer
-            batch_feats_mask0 = torch.zeros(batch_feats.shape[:2]).to(device)
-            batch_feats_mask1 = torch.ones(batch_feats.shape[:2]).to(device)
-            batch_feats_mask = torch.where(torch.sum(batch_feats, dim=-1) == 0, batch_feats_mask1, batch_feats_mask0)
-
-            # with torch.no_grad():
-            #     batch_feats, _ = pretrained(batch_feats, batch_feats, batch_feats_mask, batch_feats_mask, 0, return3=True)
-
-            batch_pred = model(batch_feats, batch_feats_mask)
-
-            # update the parameters (loss, backprop, etc.)
-            loss = loss_fn(batch_pred, batch_label)
-            total_loss += loss.item()
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
-
-        print("Epoch {} Average Training Loss: {}".format(i+1, total_loss/len(train_loader_feat)))
-
-        # VALIDATION!
-        model.eval()
-        total_loss = 0
-        for batch_feats, batch_label in tqdm(zip(val_loader_feat, val_loader_label), total=len(val_loader_label)):
-            batch_feats = batch_feats.float().to(device)
-            batch_label = batch_label.float().to(device)
-
-            # create mask for transformer
-            batch_feats_mask0 = torch.zeros(batch_feats.shape[:2]).to(device)
-            batch_feats_mask1 = torch.ones(batch_feats.shape[:2]).to(device)
-            batch_feats_mask = torch.where(torch.sum(batch_feats, dim=-1) == 0, batch_feats_mask1, batch_feats_mask0)
-
-            with torch.no_grad():
-                # batch_feats, _ = pretrained(batch_feats, batch_feats, batch_feats_mask, batch_feats_mask, 0, return3=True)
-                batch_pred = model(batch_feats, batch_feats_mask)
-
-            loss = loss_fn(batch_pred, batch_label)
-            total_loss += loss.item()
-        print("Epoch {} Average Validation Loss: {}".format(i+1, total_loss/len(val_loader_feat)))
-        print('-'*30)
-
-
-        # saving models:
-        if (i+1)%save_every == 0:
-            model_savepath = "/net/scratch3.mit.edu/scratch3-3/chihoim/model_ckpts/081322_briney_pred_clas"
-            raw_model = model.module if hasattr(model, "module") else model
-            model_sum = {'model_state_dict': raw_model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict()}
-            savepath = os.path.join(model_savepath, 'briney_predictor_{}epochs.pt'.format(i+1))
-            torch.save(model_sum, savepath)
-
-    print('='*30)
-    total_loss = 0
-    for batch_feats, batch_label in tqdm(zip(test_loader_feat, test_loader_label), total=len(test_loader_label)):
-        batch_feats = batch_feats.float().to(device)
-        batch_label = batch_label.float().to(device)
-
-        # create mask for transformer
-        batch_feats_mask0 = torch.zeros(batch_feats.shape[:2]).to(device)
-        batch_feats_mask1 = torch.ones(batch_feats.shape[:2]).to(device)
-        batch_feats_mask = torch.where(torch.sum(batch_feats, dim=-1) == 0, batch_feats_mask1, batch_feats_mask0)
-
-        with torch.no_grad():
-            # batch_feats, _ = pretrained(batch_feats, batch_feats, batch_feats_mask, batch_feats_mask, 0, return3=True)
-            batch_pred = model(batch_feats, batch_feats_mask)
-
-        loss = loss_fn(batch_pred, batch_label)
-        total_loss += loss.item()
-    print("Average Test Loss: {}".format(total_loss/len(test_loader_feat)))
-
-
-def predict_count(args, is_regression):
-
-    from model import AbMAPAttn, BrineyPredictorAttn
-    device = torch.device("cuda:{}".format(args.device_num) if torch.cuda.is_available() else "cpu")
-
-    # Load all Briney subjects into one Tensor
-    print("packing Briney subjects data into single dataset...")
-    briney_root = '/data/cb/rsingh/work/antibody/ci_data/processed/briney_nature_2019'
-    with open(os.path.join(briney_root, 'H_interm_feats_081622.p'), 'rb') as f:
-        briney_all_feats, briney_all_counts, briney_all_subj, briney_filenames = pickle.load(f)
-    briney_all_feats_np = np.concatenate(briney_all_feats, axis=0)
-    briney_all_counts_np = np.concatenate(briney_all_counts, axis=0)
-
-
-    # briney_all_counts_np = np.exp(briney_all_counts_np)
-
-    # for CLASSIFICATION ONLY
-    # briney_all_counts_np = (briney_all_counts_np > 1e-5).astype(float)
-    # print("Number of counts > 1:", np.sum(briney_all_counts_np))
-
-
-    dataset_all = np.concatenate([briney_all_feats_np, briney_all_counts_np[:, np.newaxis]], axis=-1)
-    np.random.shuffle(dataset_all)
-    print(briney_all_feats_np.shape, briney_all_counts_np.shape, dataset_all.shape)
-    train_size, val_size = int(0.7*len(briney_all_counts_np)), int(0.15*len(briney_all_counts_np))
-    test_size = len(briney_all_counts_np) - train_size - val_size
-    
-
-    if is_regression == True:
-        # build regression model
-        from sklearn.linear_model import LinearRegression, LogisticRegression, PoissonRegressor, GammaRegressor
-        reg_train, reg_test = dataset_all[:train_size+val_size], dataset_all[train_size+val_size:]
-        reg_train_data, reg_train_label = reg_train[:,:-1], reg_train[:,-1]
-        reg_test_data, reg_test_label = reg_test[:,:-1], reg_test[:,-1]
-        print(reg_train_data.shape, reg_test_data.shape)
-
-        # linreg = LinearRegression().fit(reg_train_data, reg_train_label)
-        linreg = PoissonRegressor().fit(reg_train_data, reg_train_label)
-        reg_test_pred = linreg.predict(reg_test_data)
-        spear = evaluate_spearman(reg_test_pred, reg_test_label)
-        reg_score = linreg.score(reg_test_data, reg_test_label)
-        print("Spearman Rank Score for Regression Test Set:", spear)
-        print("Coefficient of Determination for Regression Test Set:", reg_score)
-
-        # logreg = LogisticRegression(class_weight='balanced', C=0.5).fit(reg_train_data, reg_train_label)
-        # reg_score = logreg.score(reg_test_data, reg_test_label)
-        # print("Mean accuracy on the Test set:", reg_score)
-
-        return
-
-
-    # HYPERPARAMETERS:
-    num_epochs = 500
-    batch_size = 32
-    lr = 5e-4
-    save_every = 100
-
-    # build Briney Predictor, Loss, Optimizer:
-    model = BrineyPredictor(input_dim = 252, mid_dim1 = 64, mid_dim2 = 16, mid_dim3 = 4).to(device)
-    loss_fn = nn.MSELoss()
-    # loss_fn = nn.BCELoss()
-    optimizer = opt.AdamW(model.parameters(), lr=lr)
-
-    print("creating dataloaders...")
-    # create train/test dataloders
-    train_set, valid_set, test_set = data.random_split(dataset_all, [train_size, val_size, test_size])
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    valid_loader = DataLoader(valid_set, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
-
-    for i in range(num_epochs):
-        # TRAINING!
-        model.train()
-        total_loss = 0
-        for batch in tqdm(train_loader):
-            batch = batch.float().to(device)
-            batch_feats, batch_label = batch[:, :-1], batch[:, -1]
-            # print(type(batch), type(batch_feats), type(batch_label))
-            batch_pred = model(batch_feats)
-
-            # update the parameters (loss, backprop, etc.)
-            loss = loss_fn(batch_pred, batch_label)
-            total_loss += loss.item()
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
-
-        print("Epoch {} Average Training Loss: {}".format(i+1, total_loss/len(train_loader)))
-
-        # VALIDATION!
-        model.eval()
-        total_loss = 0
-        for batch in tqdm(valid_loader):
-            batch = batch.float().to(device)
-            batch_feats, batch_label = batch[:, :-1], batch[:, -1]
-            with torch.no_grad():
-                batch_pred = model(batch_feats)
-
-            loss = loss_fn(batch_pred, batch_label)
-            total_loss += loss.item()
-        print("Epoch {} Average Validation Loss: {}".format(i+1, total_loss/len(valid_loader)))
-        print('-'*30)
-
-
-        # saving models:
-        if (i+1)%save_every == 0:
-            model_savepath = "/net/scratch3.mit.edu/scratch3-3/chihoim/model_ckpts/081122_briney_pred"
-            # model_savepath = "/net/scratch3.mit.edu/scratch3-3/chihoim/model_ckpts/081322_briney_pred_clas"
-            raw_model = model.module if hasattr(model, "module") else model
-            model_sum = {'model_state_dict': raw_model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict()}
-            savepath = os.path.join(model_savepath, 'briney_predictor_{}epochs.pt'.format(i+1))
-            torch.save(model_sum, savepath)
-
-    print('='*30)
-    total_loss = 0
-    for batch in tqdm(test_loader):
-        batch = batch.float().to(device)
-        batch_feats, batch_label = batch[:, :-1], batch[:, -1]
-        with torch.no_grad():
-            batch_pred = model(batch_feats)
-
-        loss = loss_fn(batch_pred, batch_label)
-        total_loss += loss.item()
-    print("Average Test Loss: {}".format(total_loss/len(test_loader)))
 
 
 
@@ -464,8 +146,7 @@ if __name__ == "__main__":
 
         import multiprocessing as mp
         from multiprocessing import get_context
-        # from multiprocessing import set_start_method
-        # set_start_method('spawn')
+
         feats_result = []
 
         with get_context('spawn').Pool(processes=args.num_processes, initializer=init, initargs=[args.device_num]) as p:
@@ -676,12 +357,6 @@ if __name__ == "__main__":
         print("Evaluate for matrix", matrix_name)
         for i in range(len(subject_ids)):
             print("Ratio of best hit inside subject {}: {}".format(subject_ids[i], counts_per_subj[i]))
-
-
-    elif args.mode == '6_predict_count':
-        # predict_count(args, is_regression=False)
-        predict_count_attn(args)
-
 
     else:
         assert False
