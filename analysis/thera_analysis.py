@@ -102,7 +102,6 @@ def generate_embeddings(args):
     with open('/data/cb/rsingh/work/antibody/ci_data/processed/thera-sabdab/thera_ids_n{}.p'.format(len(discontinuous_final)), 'wb') as f:
         pickle.dump(thera_ids, f)
 
-    
 
 
 

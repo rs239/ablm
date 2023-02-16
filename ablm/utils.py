@@ -24,7 +24,7 @@ def evaluate_spearman(pred, target):
 
 
 def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
-                     anarci_dir='../data/anarci_files'):
+                     anarci_dir='/net/scratch3/scratch3-3/chihoim/ablm/data/anarci_files'):
     chothia_nums = {'H': [[26, 32], [52, 56], [96, 101]],
                     'L': [[26, 32], [50, 52], [91, 96]]}
 
@@ -54,6 +54,7 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
 
     # change temp_path to a folder you'd like to save your ANARCI file to
     # temp_path = "/net/scratch3.mit.edu/scratch3-3/chihoim/misc/temp{}".format(fold)
+
     if not os.path.isdir(anarci_dir):
         os.mkdir(anarci_dir)
     

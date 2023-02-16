@@ -11,8 +11,10 @@ import glob
 import numpy as np
 import csv
 
+sys.path.append('..')
 from abmap_embed import ProteinEmbedding
 from utils import find_sequence
+from plm_embed import reload_models_to_device
 
 import psico.fullinit
 from pymol import cmd
@@ -43,8 +45,8 @@ def work_parallel(idx_pair):
     cmd.split_chains('999D')
 
 
-    p1_seq_H, p1_seq_L = find_sequence(dataset = 'sabdab_pure', pdb_id=pdb_id1)
-    p2_seq_H, p2_seq_L = find_sequence(dataset = 'sabdab_pure', pdb_id=pdb_id2)
+    p1_seq_H, p1_seq_L = find_sequence(pdb_id=pdb_id1)
+    p2_seq_H, p2_seq_L = find_sequence(pdb_id=pdb_id2)
 
     if chain_type == 'H':
         p1_seq, p2_seq = p1_seq_H, p2_seq_H
@@ -209,16 +211,20 @@ def save_sabdab_cdrs(args):
 
 def main_sabdab(args, orig_embed = False):
 
-    pdb_ids_path = "../data/processed/sabdab/valid_ids_{}.txt".format(args.set)
-    with open(pdb_ids_path, 'r') as f:
-        pdb_ids = f.read().splitlines()
+    # pdb_ids_path = "../data/processed/sabdab/valid_ids_{}.txt".format(args.set)
+    # with open(pdb_ids_path, 'r') as f:
+    #     pdb_ids = f.read().splitlines()
+
+    pdb_ids = os.listdir('/net/scratch3/scratch3-3/chihoim/ab_ag_interaction/data/sabdab_dataset')
+
     print(len(pdb_ids))
 
-    out_folder = "../data/processed/sabdab/cdrembed_maskaug4"
+    # out_folder = "../data/processed/sabdab/cdrembed_maskaug4"
+    out_folder = "/net/scratch3/scratch3-3/chihoim/ablm/data/processed/sabdab/cdrembed_maskaug4"
 
-    # embed_type = 'beplerberger'
+    embed_type = 'beplerberger'
     # embed_type = 'protbert'
-    embed_type = 'esm1b'
+    # embed_type = 'esm1b'
     # embed_type = 'tape'
 
     reload_models_to_device(args.device_num)
@@ -227,12 +233,12 @@ def main_sabdab(args, orig_embed = False):
     for c_type in ['H', 'L']:
         for pdb_id in tqdm(pdb_ids):
 
-            # file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
-            # if os.path.exists(os.path.join(out_folder, embed_type, file_name)):
-            #     continue
+            file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
+            if os.path.exists(os.path.join(out_folder, embed_type, file_name)):
+                continue
 
 
-            seq_h, seq_l = find_sequence(dataset='sabdab_pure', pdb_id = pdb_id)
+            seq_h, seq_l = find_sequence(pdb_id = pdb_id)
             seq = seq_h if c_type == 'H' else seq_l
             prot_embed = ProteinEmbedding(seq, c_type, fold='x')
 
@@ -337,7 +343,7 @@ def make_sabdab_features(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", help="which code path to run. see main(..) for details", type=str, choices = ["1_generate_id_pairs", "2_calculate_pair_scores"])
+    parser.add_argument("--mode", help="which code path to run. see main(..) for details", type=str)
     parser.add_argument("--device_num", help="GPU device for computation.", type=int, default=0)
     parser.add_argument("--num_processes", help="number of processes for multiprocessing", type=int, default=1)
     parser.add_argument("--chunk_size", help="chunk size for each processing step", type=int, default=1)
@@ -398,6 +404,9 @@ if __name__ == "__main__":
 
                     # if save_count == num_pairs:
                     #     break
+
+    elif args.mode == '3_generate_plm_embeddings':
+        main_sabdab(args)
 
     else:
         assert False
