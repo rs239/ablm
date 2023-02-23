@@ -10,23 +10,14 @@ import random
 import glob
 import numpy as np
 import csv
-# from setuptools import setup, find_packages
 
-# setup(name='sabdab_preprocess', packages=find_packages())
-from ..abmap_embed import ProteinEmbedding
-from ..utils import find_sequence
-from ..plm_embed import reload_models_to_device
-
-# sys.path.append('..')
-# from abmap_embed import ProteinEmbedding
-# from utils import find_sequence
-# from plm_embed import reload_models_to_device
+from abmap_embed import ProteinEmbedding
+from utils import find_sequence
+from plm_embed import reload_models_to_device
 
 import psico.fullinit
 from pymol import cmd
 
-print("all imports worked!")
-assert False
 
 
 def init(dev_num, c_type, region, which_set):
