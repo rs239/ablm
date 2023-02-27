@@ -11,15 +11,19 @@ import pickle
 import pandas as pd
 
 import sys
-sys.path.append('..')
+# sys.path.append('..')
 
-import base_config
-from utils import get_boolean_mask, find_sequence
+from ..base_config import *
+# import base_config
+from ..abmap.utils import get_boolean_mask, find_sequence
 from mutate import generate_mutation
 from embed import embed_sequence, reload_models_to_device #, load_model
 from model import MultiTaskLossWrapper
 
 import torch
+
+print("all imports were successful!")
+assert False
 
 
 
@@ -150,3 +154,7 @@ def create_covabdab_features(args):
         assert feat_interm.shape[-1] == 256
         with open(os.path.join(out_dir, "{}_interm_H.p".format(seq_id)), 'wb') as p:
             pickle.dump(torch.squeeze(feat_interm), p)
+
+
+if __name__ == "__main__":
+    print("running covabdab analysis!")
