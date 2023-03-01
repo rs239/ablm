@@ -15,10 +15,10 @@ sys.path.append('..')
 sys.path.append('../..')
 
 import base_config
-from utils import get_boolean_mask, find_sequence
-from mutate import generate_mutation
-from plm_embed import embed_sequence, reload_models_to_device #, load_model
-from model import MultiTaskLossWrapper
+from abmap.utils import get_boolean_mask, find_sequence
+from abmap.mutate import generate_mutation
+from abmap.plm_embed import embed_sequence, reload_models_to_device #, load_model
+from abmap.model import MultiTaskLossWrapper
 
 import torch
 

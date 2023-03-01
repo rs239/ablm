@@ -24,7 +24,8 @@ def evaluate_spearman(pred, target):
 
 
 def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
-                     anarci_dir='/net/scratch3/scratch3-3/chihoim/ablm/data/anarci_files'):
+                     anarci_dir='data/anarci_files'):
+    # TODO - handle creation of anarci files
     chothia_nums = {'H': [[26, 32], [52, 56], [96, 101]],
                     'L': [[26, 32], [50, 52], [91, 96]]}
 
@@ -56,9 +57,12 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
     # temp_path = "/net/scratch3.mit.edu/scratch3-3/chihoim/misc/temp{}".format(fold)
 
     if not os.path.isdir(anarci_dir):
-        os.mkdir(anarci_dir)
+        os.makedirs(anarci_dir)
     
     temp_name = os.path.join(anarci_dir, 'temp{}'.format(dev))
+    print(temp_name)
+    print(f'Sequence: {sequence}')
+    print(f'scheme: {scheme}')
 
     os.system('ANARCI -i {} --csv -o {} -s {}'.format(sequence, temp_name, scheme))
     

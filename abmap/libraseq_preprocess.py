@@ -6,8 +6,8 @@ import numpy as np
 import torch
 import pickle
 
-from abmap_embed import ProteinEmbedding
-from plm_embed import reload_models_to_device
+from abmap.abmap_embed import ProteinEmbedding
+from abmap.plm_embed import reload_models_to_device
 
 
 def create_standardized_dataset(device_num=0):
