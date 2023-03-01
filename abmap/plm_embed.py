@@ -17,7 +17,7 @@ def reload_models_to_device(device_num=0, plm_type='beplerberger'):
     if plm_type == 'beplerberger':
         global bb_model
         bb_model = ds_pre.get_pretrained("lm_v1")
-        bb_model = bb_model.cuda(device)
+        bb_model = bb_model.to(device)
         bb_model.eval()
 
     ######### ESM-1b ##########
@@ -25,7 +25,7 @@ def reload_models_to_device(device_num=0, plm_type='beplerberger'):
         global esm_model, esm_batch_converter
         esm_model, esm_alphabet = torch.hub.load("facebookresearch/esm", "esm1b_t33_650M_UR50S")
         esm_batch_converter = esm_alphabet.get_batch_converter()
-        esm_model = esm_model.cuda(device)
+        esm_model = esm_model.to(device)
         esm_model.eval()
 
     ######### TAPE ##########
@@ -34,7 +34,7 @@ def reload_models_to_device(device_num=0, plm_type='beplerberger'):
         from tape import ProteinBertModel, TAPETokenizer
         tape_model = ProteinBertModel.from_pretrained('bert-base')
         tape_tokenizer = TAPETokenizer(vocab='iupac')
-        tape_model = tape_model.cuda(device)
+        tape_model = tape_model.to(device)
         tape_model.eval()
 
     ######### ProtBert #########
@@ -43,7 +43,7 @@ def reload_models_to_device(device_num=0, plm_type='beplerberger'):
         global protbert_tokenizer, protbert_model
         protbert_tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert", do_lower_case=False )
         protbert_model = BertModel.from_pretrained("Rostlab/prot_bert")
-        protbert_model = protbert_model.cuda(device)
+        protbert_model = protbert_model.to(device)
         protbert_model.eval()
 
     else:
@@ -63,7 +63,7 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
             alphabet = Uniprot21()
             es = torch.from_numpy(alphabet.encode(sequence.encode('utf-8')))
             x = es.long().unsqueeze(0)
-            x = x.cuda(device)
+            x = x.to(device)
 
             if embed_model is None:
                 z = bb_model.transform(x)
@@ -82,7 +82,7 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
         batch_labels, batch_strs, batch_tokens = esm_batch_converter(data)
         # think it adds beginning and end tokens in the conversion process: ex) seq length 16 --> 18
 
-        batch_tokens = batch_tokens.cuda(device)
+        batch_tokens = batch_tokens.to(device)
         # Extract per-residue representations (on CPU)
         with torch.no_grad():
             if embed_model is None:
@@ -99,15 +99,15 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
     elif embed_type == "tape":
         assert embed_device is None and embed_model is None # not implemented yet
         # print("using Berkeley's TAPE...")
-        model = tape_model.eval().cuda(device)
+        model = tape_model.eval().to(device)
 
-        token_ids = torch.tensor([tape_tokenizer.encode(sequence)]) #.cuda(device)
-        # token_ids = token_ids.cuda()
+        token_ids = torch.tensor([tape_tokenizer.encode(sequence)]) #.to(device)
+        # token_ids = token_ids.to()
         with torch.no_grad():
             if embed_model is None:
-                output = model(token_ids.cuda(device))
+                output = model(token_ids.to(device))
             else:
-                output = embed_model(token_ids.cuda(device))
+                output = embed_model(token_ids.to(device))
         embedding = output[0][0,1:-1,:] # remove start and end tokens
 
         return embedding
@@ -120,14 +120,14 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
             alphabet = Uniprot21()
             es = torch.from_numpy(alphabet.encode(sequence.encode('utf-8')))
             x = es.long().unsqueeze(0)
-            x = x.cuda(device)
+            x = x.to(device)
             z = bb_model.transform(x)
             # return z.cpu()[0]
 
-        model = ds_model.eval().cuda(device)
+        model = ds_model.eval().to(device)
         embedding = model.embedding(z)[0]
 
-        return embedding #.cuda()
+        return embedding #.to()
 
     elif embed_type == 'protbert':
 
@@ -135,10 +135,10 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
     
         with torch.no_grad():
             encoded_input = protbert_tokenizer(sequence_spaced, return_tensors='pt')
-            # encoded_input = encoded_input.cuda(device)
+            # encoded_input = encoded_input.to(device)
             # print(encoded_input)
             for key in encoded_input.keys():
-                encoded_input[key] = encoded_input[key].cuda(device)
+                encoded_input[key] = encoded_input[key].to(device)
             output = protbert_model(**encoded_input)
             feature = output.last_hidden_state[0][1:-1,:]
 

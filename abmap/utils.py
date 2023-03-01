@@ -56,9 +56,12 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
     # temp_path = "/net/scratch3.mit.edu/scratch3-3/chihoim/misc/temp{}".format(fold)
 
     if not os.path.isdir(anarci_dir):
-        os.mkdir(anarci_dir)
+        os.makedirs(anarci_dir)
     
     temp_name = os.path.join(anarci_dir, 'temp{}'.format(dev))
+    print(temp_name)
+    print(f'Sequence: {sequence}')
+    print(f'scheme: {scheme}')
 
     os.system('ANARCI -i {} --csv -o {} -s {}'.format(sequence, temp_name, scheme))
     
