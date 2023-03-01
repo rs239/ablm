@@ -2,7 +2,7 @@ import os
 import torch
 from torch import nn
 import torch.nn.functional as F
-from positional_encodings import PositionalEncoding1D
+from positional_encodings.torch_encodings import PositionalEncoding1D
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad is True)
@@ -12,6 +12,10 @@ def count_parameters(model):
 class AbMAPAttn(nn.Module):
     def __init__(self, embed_dim = 6165, mid_dim1 = 2048, mid_dim2 = 512, mid_dim3 = 128,
                   proj_dim = 50, hidden_dim = 50, num_enc_layers = 1, num_heads=5):
+        '''
+            
+        '''
+        assert (proj_dim + 4)%num_heads == 0, "AbMAPAttn parameter proj_dim + 4 must be divisible by num_heads. i.e. (proj_dim + 4)/num_heads is an int"
         super(AbMAPAttn, self).__init__()
         self.embed_dim = embed_dim
         self.activation = nn.LeakyReLU()
@@ -90,7 +94,57 @@ class AbMAPAttn(nn.Module):
         return x
 
 
+    def embed(self, x, x_mask=None, task='structure', embed_type='variable'):
+        assert embed_type in ['variable', 'fixed']
+        assert task in ['structure', 'function']
+        ### Get variablee length embedding
+        # Project to a lower dimension through several linear + LayerNorm layers
+        if x.shape[-1] > 6000:
+            x, x_pos = x[:,:,-4-self.embed_dim:-4], x[:,:,-4:]
+        else:
+            x, x_pos = x[:,:,:-4], x[:,:,-4:]
+        x = self.project(x)
+
+        # ADD POSITIONAL ENCODING HERE:
+        x = torch.add(x, self.posenc(x))
+        x = torch.cat([x, x_pos], dim=-1)
+
+        # Attention block
+        att_task = 0 if task == 'structure' else 1
+        x = self.attention(x, x_mask, att_task)
+
+        # Output variable-length embedding as an option
+        if embed_type == 'variable': return x
+
+        ### Get Fixed-length embedding
+        # method 1: mean of the features over the seq_len:
+        if x_mask is None:
+            x_ = torch.mean(x, dim=1)
+        else:
+            x_ = torch.sum(x, dim=1)
+            x_ = torch.div(x_, torch.unsqueeze(x_mask.shape[-1] - torch.sum(x_mask, dim=-1), dim=-1))
+
+        # method 2: log-sum-exp of the output features from attention layers
+        x = torch.log(torch.sum(torch.exp(x), dim=1))
+
+        # ---------------------------------------
+        # concatenate mean and logsumexp
+        x = F.normalize(x)
+        x_ = F.normalize(x_)
+        x = torch.cat((x_, x), dim=-1)
+        # ---------------------------------------
+
+        # Output fixed-length embedding here. This is the concat of the mean and LogSumExp over the residue embeddings
+        if embed_type == 'fixed':
+            return x
+
+  
+        
+    
     def forward(self, x1, x2, x1_mask, x2_mask, task, return1 = False, return2 = False, return3 = False, task_specific = False):
+        
+        ### Project both inputs x1 and x2 to a lower dimension through several linear + LayerNorm layers
+        ### x1 and x2 are CDR-specific embeddings of antibody sequences
         if x1.shape[-1] > 6000:
             x1, x1_pos = x1[:,:,-4-self.embed_dim:-4], x1[:,:,-4:]
             x2, x2_pos = x2[:,:,-4-self.embed_dim:-4], x2[:,:,-4:]
@@ -118,18 +172,18 @@ class AbMAPAttn(nn.Module):
         x1 = torch.cat([x1, x1_pos], dim=-1)
         x2 = torch.cat([x2, x2_pos], dim=-1)
 
-        # return intermediate feature 1
+        # return intermediate feature 1: lower-Dim rep with positional encodings added and concatenated
         if return2:
             return x1, x2
 
         x1 = self.attention(x1, x1_mask, task)
         x2 = self.attention(x2, x2_mask, task)
 
-        # return intermediate feature 2
+        # return intermediate feature 2: lower-Dim rep after Transformer Encoder Block
         if return3:
             return x1, x2
 
-        # method 1: mean of the features over the seq len:
+        # method 1: mean of the features over the seq_len:
         if x1_mask is None:
             x1_ = torch.mean(x1, dim=1)
             x2_ = torch.mean(x2, dim=1)
@@ -158,11 +212,14 @@ class AbMAPAttn(nn.Module):
         x2 = torch.cat((x2_, x2), dim=-1)
         # ---------------------------------------
 
+        # Output fixed-length embedding here. These are the concat of the mean and LogSumExp over the residue embeddings
         if task_specific:
             return x1, x2
 
+        # Take cosine similarity of two embeddings
         pred = torch.unsqueeze(self.cossim(x1, x2), dim=-1)
 
+        # Transform cossim for either structure or function
         pred = transform(pred)
 
         return torch.reshape(pred, (-1,)), x1, x2
