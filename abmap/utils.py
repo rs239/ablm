@@ -7,9 +7,31 @@ import os
 import pickle
 from scipy.stats import spearmanr
 from matplotlib import pyplot as plt
+import time, tempfile, json
+from Bio import SeqIO
 
-import os, time, tempfile, json
 
+def log(m, file=None, timestamped=True, print_also=False):
+    curr_time = f"[{datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}] "
+    log_string = f"{curr_time if timestamped else ''}{m}"
+    if file is None:
+        print(log_string)
+    else:
+        print(log_string, file=file)
+        if print_also:
+            print(log_string)
+        file.flush()
+
+
+def parse(f, comment="#"):
+    descriptions = []
+    sequences = []
+
+    for record in SeqIO.parse(f, "fasta"):
+        descriptions.append(record.description)
+        sequences.append(str(record.seq))
+
+    return descriptions, sequences
 
 
 

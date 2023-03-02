@@ -93,9 +93,9 @@ def create_dataloader_sabdab(data_dir, batch_size, emb_type, mut_type, chain_typ
     embed_dir = os.path.join(parent_dir, data_dir, emb_type)
 
     if region == 'whole':
-        data_path = os.path.join(parent_dir, 'set1_{}_pair_scores_100k.csv'.format(chain_type))
+        data_path = os.path.join(parent_dir, 'pair_scores', 'set1_{}_pair_scores_100k.csv'.format(chain_type))
     else:
-        data_path = os.path.join(parent_dir, 'pair_scores_cdr', 'set1_CDR{}_{}_pair_scores_100k.csv'.format(region, chain_type))
+        data_path = os.path.join(parent_dir, 'pair_scores', 'set1_CDR{}_{}_pair_scores_100k.csv'.format(region, chain_type))
 
     data = pd.read_csv(data_path)
     data = data.iloc[:100000]

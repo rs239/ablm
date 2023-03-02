@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 from tqdm import tqdm
 import glob
@@ -9,19 +10,19 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pickle
 import pandas as pd
+import torch
 
-import sys
 sys.path.append('..')
 sys.path.append('../..')
-
 import base_config
 from utils import get_boolean_mask, find_sequence
 from mutate import generate_mutation
-from plm_embed import embed_sequence, reload_models_to_device #, load_model
-from model import MultiTaskLossWrapper
+from plm_embed import embed_sequence, reload_models_to_device
 
-import torch
-
+# import base_config
+# from .utils import get_boolean_mask, find_sequence, parse, log
+# from .mutate import generate_mutation
+# from .plm_embed import embed_sequence, reload_models_to_device
 
 
 class ProteinEmbedding:
@@ -160,11 +161,14 @@ class ProteinEmbedding:
 
         return out
 
-    def create_cdr_embedding_nomut(self, sep = False):
+    def create_cdr_embedding_nomut(self, embed_type, sep = False, mask=False):
         """
         splice the CDR regions of the embedding together with no mutation adjustments
         if sep is True, tensor of 0's are inserted as pad's between each CDR region
         """
+        self.embed_seq(embed_type = embed_type)
+
+        self.create_cdr_mask()
 
         result_matr = self.embedding.detach().clone()
 
@@ -181,15 +185,32 @@ class ProteinEmbedding:
 
         if sep:
             emb_dim = result_matr.shape[-1]
-            return torch.cat((result_matr[cdr1, :].cuda(), torch.zeros(1, emb_dim).cuda(),
+            out_embed = torch.cat((result_matr[cdr1, :].cuda(), torch.zeros(1, emb_dim).cuda(),
                               result_matr[cdr2, :].cuda(), torch.zeros(1, emb_dim).cuda(),
                               result_matr[cdr3, :].cuda()), dim=0)
         else:
             cdr_idxs = cdr1 + cdr2 + cdr3
-            return result_matr[cdr_idxs, :]
+            out_embed = result_matr[cdr_idxs, :]
+
+        out_embed = out_embed.detach().cpu()
+
+        if mask:
+            if sep:
+                print("Cannot use mask augmentions when there are separator tokens.")
+                raise ValueError
+            cdr_mask_loc = self.cdr_mask[cdr_idxs]
+            cdr_label_all = (cdr_mask_loc > 0).float()
+            cdr_label_1 = (cdr_mask_loc == 1).float()
+            cdr_label_2 = (cdr_mask_loc == 2).float()
+            cdr_label_3 = (cdr_mask_loc == 3).float()
+            cdr_label = torch.stack([cdr_label_1, cdr_label_2, cdr_label_3, cdr_label_all], dim=-1)
+
+            out_embed = torch.cat((out_embed.cpu(), cdr_label), dim=-1)
+
+        return out_embed
 
 
-    def create_cdr_specific_embedding(self, embed_type, k, seperator = False, mask = True):
+    def create_cdr_specific_embedding(self, embed_type, k=100, seperator = False, mask = True):
         """
         Create a CDR-specific embedding directly from sequence
         embed_type : embed with which general purpose PLM? (i.e. beplerberger)
@@ -208,40 +229,60 @@ class ProteinEmbedding:
         return cdr_embed
             
 
+def augment_from_fasta(fastaPath, outputPath, chain_type, embed_type,
+                       num_mutations, seperators, cdr_masks,
+                       device=0, verbose=False):
+    """
+    Embed sequences with existing PLMs and augment with mutagenesis & CDR isolation
+    
+    :param fastaPath: Input sequence file (``.fasta`` format)
+    :type fastaPath: str
+    :param outputPath: Output embedding file (``.h5`` format)
+    :type outputPath: str
+    :param device: Compute device to use for embeddings [default: 0]
+    :type device: int
+    :param verbose: Print embedding progress
+    :type verbose: bool
+    """
 
-
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--embed_type', type=str, default='beplerberger',
-                        help='Type of model to embed proten sequence with.')
-
-    parser.add_argument('--num_proc', type=int, default=4,
-                        help='Number of cores to use for parallel processing')
-
-    parser.add_argument('--device_num', type=int, default=0,
-                        help='GPU Device number.')
-
-    parser.add_argument('--chain_type', type=str, default='',
-                        help='input string of protein sequence.')
-
-    parser.add_argument('--output_path', type=str, default='.',
-                        help='path for the output file of embeddings.')
-
-    args = parser.parse_args()
-    # base_config.device = 'cuda:0'
-
-    if torch.cuda.is_available():
-        print("Using the GPU!")
+    use_cuda = (device >= 0) and torch.cuda.is_available()
+    if use_cuda:
+        torch.cuda.set_device(device)
+        if verbose:
+            log(
+                f"# Using CUDA device {device} - {torch.cuda.get_device_name(device)}"
+            )
     else:
-        print("WARNING: Could not find GPU! Using CPU only")
+        if verbose:
+            log("# Using CPU")
 
-    # get_valid_ids()
-    # main_libra(args, orig_embed=False)
-    # main_sabdab(args, orig_embed=True)
-    # create_covabdab_embeddings(args)
-    main_covabdab(args)
-    # make_sabdab_features(args)
-    # save_sabdab_cdrs(args)
+    if verbose:
+        log("# Loading Model...")
+
+    names, seqs = parse(fastaPath)
+
+
+    log("# Storing to {}...".format(outputPath))
+    with torch.no_grad(), h5py.File(outputPath, "a") as h5fi:
+        try:
+            for (name, seq) in tqdm(zip(names, seqs), total=len(names)):
+                if name not in h5fi:
+                    prot = ProteinEmbedding(seq, chain_type, embed_device=f'cuda:{device}')
+                    if num_mutations > 0:
+                        z = prot.create_cdr_specific_embedding(embed_type, num_mutations,
+                                                                           separators, cdr_masks)
+                    else:
+                        z = prot.create_cdr_embedding_nomut(embed_type, separators, cdr_masks)
+
+                    # x = x.long().unsqueeze(0)
+                    # z = model.transform(x)
+                    dset = h5fi.require_dataset(
+                        name,
+                        shape=z.shape,
+                        dtype="float32",
+                        compression="lzf",
+                    )
+                    dset[:] = z.cpu().numpy()
+        except KeyboardInterrupt:
+            sys.exit(1)
+
