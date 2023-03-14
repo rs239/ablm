@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import pickle
 
-from abmap_embed import ProteinEmbedding
+from abmap_augment import ProteinEmbedding
 from plm_embed import reload_models_to_device
 
 

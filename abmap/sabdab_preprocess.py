@@ -11,7 +11,7 @@ import glob
 import numpy as np
 import csv
 
-from abmap_embed import ProteinEmbedding
+from abmap_augment import ProteinEmbedding
 from utils import find_sequence
 from plm_embed import reload_models_to_device
 
@@ -231,7 +231,7 @@ def main_sabdab(args, orig_embed = False):
     for c_type in ['H', 'L']:
         for pdb_id in tqdm(pdb_ids):
 
-            file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
+            file_name = '{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
             if os.path.exists(os.path.join(out_folder, embed_type, file_name)):
                 continue
 
@@ -251,7 +251,7 @@ def main_sabdab(args, orig_embed = False):
                 print("processing pdb id {} didn't work...".format(pdb_id))
                 # continue
 
-            file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
+            file_name = '{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
             with open(os.path.join(out_path, file_name), 'wb') as fh:
                 print("Saving", pdb_id)
                 pickle.dump(cdr_embed, fh)

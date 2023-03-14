@@ -9,6 +9,7 @@ from scipy.stats import spearmanr
 from matplotlib import pyplot as plt
 import time, tempfile, json
 from Bio import SeqIO
+from datetime import datetime
 
 
 def log(m, file=None, timestamped=True, print_also=False):
@@ -46,7 +47,7 @@ def evaluate_spearman(pred, target):
 
 
 def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
-                     anarci_dir='../data/anarci_files'):
+                     anarci_dir='/net/scratch3/scratch3-3/chihoim/ablm/data/anarci_files'):
     chothia_nums = {'H': [[26, 32], [52, 56], [96, 101]],
                     'L': [[26, 32], [50, 52], [91, 96]]}
 

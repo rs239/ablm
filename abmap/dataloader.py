@@ -88,7 +88,7 @@ def my_collate(data):
 
 def create_dataloader_sabdab(data_dir, batch_size, emb_type, mut_type, chain_type, region):
     # parent_dir = '../data/processed/sabdab'
-    parent_dir = '/data/cb/rsingh/work/antibody/ci_data/processed/sabdab_pure_042522'
+    parent_dir = '/data/cb/rsingh/work/antibody/ci_data/processed/sabdab'
 
     embed_dir = os.path.join(parent_dir, data_dir, emb_type)
 
@@ -106,8 +106,8 @@ def create_dataloader_sabdab(data_dir, batch_size, emb_type, mut_type, chain_typ
     for idx, row in data.iterrows():
         p1_id, p2_id, tms, rmsd = row['pdb_id1'], row['pdb_id2'], row['tm_score'], row['rmsd']
 
-        p1 = 'sabdab_{}_{}_{}_k100.p'.format(p1_id, mut_type, chain_type)
-        p2 = 'sabdab_{}_{}_{}_k100.p'.format(p2_id, mut_type, chain_type)
+        p1 = '{}_{}_{}_k100.p'.format(p1_id, mut_type, chain_type)
+        p2 = '{}_{}_{}_k100.p'.format(p2_id, mut_type, chain_type)
 
         # original embeddings:
         # p1 = 'sabdab_{}_{}_orig.p'.format(p1_id, chain_type)

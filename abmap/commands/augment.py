@@ -13,7 +13,7 @@ from typing import Callable, NamedTuple
 class AugmentArguments(NamedTuple):
     cmd: str
     device: int
-    outfile: str
+    outdir: str
     seqs: str
     chain_type: str
     plm: str
@@ -32,7 +32,7 @@ def add_args(parser):
         "--seqs", help="Sequences to be embedded", required=True
     )
     parser.add_argument(
-        "-o", "--outfile", help="h5 file to write results", required=True
+        "-o", "--outdir", help="h5 file to write results", required=True
     )
     parser.add_argument(
         "-d", "--device", type=int, default=-1, help="Compute device to use"
@@ -65,7 +65,7 @@ def main(args):
     :meta private:
     """
     inPath = args.seqs
-    outPath = args.outfile
+    outPath = args.outdir
     device = args.device
     num_mutations = args.num_mutations
     chain_type = args.chain_type

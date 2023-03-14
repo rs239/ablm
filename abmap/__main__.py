@@ -8,9 +8,10 @@ import sys
 from typing import Union
 
 from .commands.augment import AugmentArguments
+from .commands.train import TrainArguments
+from .commands.embed import EmbedArguments
 
-# AbMAPArguments = Union[AugmentArguments, ...]
-AbMAPArguments = AugmentArguments
+AbMAPArguments = Union[AugmentArguments, TrainArguments, EmbedArguments]
 
 
 class CitationAction(argparse.Action):
@@ -44,12 +45,12 @@ def main():
     subparsers = parser.add_subparsers(title="AbMAP Commands", dest="cmd")
     subparsers.required = True
 
-    from .commands import augment #, train, embed
+    from .commands import augment, train , embed
 
     modules = {
         "augment": augment,
-        # "train": train,
-        # "embed": embed,
+        "train": train,
+        "embed": embed,
     }
 
     for name, module in modules.items():

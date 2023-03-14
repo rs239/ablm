@@ -17,10 +17,10 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import MultiStepLR
 # from torch.utils.tensorboard import SummaryWriter
 
-sys.path.append('..')
-from model import AbMAPAttn, MultiTaskLossWrapper
-from utils import evaluate_spearman
-from dataloader import create_dataloader_sabdab, create_dataloader_libra
+# sys.path.append('..')
+from ..model import AbMAPAttn, MultiTaskLossWrapper
+from ..utils import evaluate_spearman
+from ..dataloader import create_dataloader_sabdab, create_dataloader_libra
 
 type_to_dim = {'beplerberger':6165, 'esm1b':1280, 'tape':768, 'dscript':100}
 

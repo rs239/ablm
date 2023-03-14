@@ -2,7 +2,7 @@
 # from ablm import abmap_embed
 # from ablm import main # TODO - change name of main to abml or abmap? Would allow (from ablm import abmap)
 
-__version__ = "0.0.2"
+__version__ = "0.0.36"
 # __citation__ = """"""
 from . import (
     commands,
