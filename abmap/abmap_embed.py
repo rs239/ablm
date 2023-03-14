@@ -197,11 +197,11 @@ class ProteinEmbedding:
         seperator : separate the CDR regions with 0-tensor tokens? (default: False)
         mask : Appending a mask that indicates which CDR a residue belongs to (1, 2, 3) (default: True)
         """
-
+        # Pass sequence through foundational PLM
         self.embed_seq(embed_type = embed_type)
-
+        # Find CDRs using chothia numbering
         self.create_cdr_mask()
-
+        # Contrastive augmentation
         kmut_matr_h = self.create_kmut_matrix(num_muts=k, embed_type=embed_type)
         cdr_embed = self.create_cdr_embedding(kmut_matr_h, sep = seperator, mask = mask)
 

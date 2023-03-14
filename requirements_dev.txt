@@ -1,3 +1,5 @@
+anarci
+hmmer>=3.1 # conda install -c biocore hmmer
 Bio>=1.5.3
 dscript~=0.2.2
 embed>=0.1.0
