@@ -11,7 +11,7 @@ import glob
 import numpy as np
 import csv
 
-from abmap_embed import ProteinEmbedding
+from abmap_augment import ProteinEmbedding
 from utils import find_sequence
 from plm_embed import reload_models_to_device
 
@@ -211,16 +211,14 @@ def save_sabdab_cdrs(args):
 
 def main_sabdab(args, orig_embed = False):
 
-    # pdb_ids_path = "../data/processed/sabdab/valid_ids_{}.txt".format(args.set)
-    # with open(pdb_ids_path, 'r') as f:
-    #     pdb_ids = f.read().splitlines()
-
-    pdb_ids = os.listdir('/net/scratch3/scratch3-3/chihoim/ab_ag_interaction/data/sabdab_dataset')
+    pdb_ids = os.listdir('../data/raw/sabdab/sabdab_dataset')[:10]
 
     print(len(pdb_ids))
 
-    # out_folder = "../data/processed/sabdab/cdrembed_maskaug4"
-    out_folder = "/net/scratch3/scratch3-3/chihoim/ablm/data/processed/sabdab/cdrembed_maskaug4"
+    out_folder = "../data/processed/sabdab/cdrembed_maskaug4"
+    # out_folder = "/net/scratch3/scratch3-3/chihoim/ablm/data/processed/sabdab/cdrembed_maskaug4"
+    if not os.path.isdir(out_folder):
+        os.mkdir(out_folder)
 
     embed_type = 'beplerberger'
     # embed_type = 'protbert'
@@ -233,7 +231,7 @@ def main_sabdab(args, orig_embed = False):
     for c_type in ['H', 'L']:
         for pdb_id in tqdm(pdb_ids):
 
-            file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
+            file_name = '{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
             if os.path.exists(os.path.join(out_folder, embed_type, file_name)):
                 continue
 
@@ -246,36 +244,14 @@ def main_sabdab(args, orig_embed = False):
             if not os.path.isdir(out_path):
                 os.mkdir(out_path)
 
-            prot_embed.embed_seq(embed_type = embed_type)
-
-            if orig_embed is True:
-                out_folder = "../data/processed/sabdab/original_embeddings"
-                out_path = os.path.join(out_folder, embed_type)
-
-                file_name = 'sabdab_{}_{}_orig.p'.format(pdb_id, prot_embed.chain_type)
-                with open(os.path.join(out_path, file_name), 'wb') as fh:
-                    print("Saving", pdb_id)
-                    pickle.dump(prot_embed.embedding, fh)
-                continue
-
-            # cdr_embed = prot_embed.embedding
 
             try:
-                prot_embed.create_cdr_mask()
+                cdr_embed = prot_embed.create_cdr_specific_embedding(embed_type, k=k, seperator=False, mask=True)
             except:
-                print("pdb id {} didn't work...".format(pdb_id))
-                continue
+                print("processing pdb id {} didn't work...".format(pdb_id))
+                # continue
 
-            kmut_matr_h = prot_embed.create_kmut_matrix(num_muts=k, embed_type=embed_type)
-            cdr_embed = prot_embed.create_cdr_embedding(kmut_matr_h, sep = False, mask = True)
-
-            # --------------------------------------------------
-            # TRYING TO CONCATENATE NOMUT! (PROTBERT ONLY)
-            # cdr_embed_nomut = prot_embed.create_cdr_embedding_nomut().cuda(args.device_num)
-            # cdr_embed = torch.cat((cdr_embed_nomut, cdr_embed.cuda(args.device_num)), dim=-1)
-            # --------------------------------------------------
-
-            file_name = 'sabdab_{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
+            file_name = '{}_{}_{}_k{}.p'.format(pdb_id, 'cat2', c_type, k)
             with open(os.path.join(out_path, file_name), 'wb') as fh:
                 print("Saving", pdb_id)
                 pickle.dump(cdr_embed, fh)

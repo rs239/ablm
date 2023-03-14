@@ -17,7 +17,6 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import MultiStepLR
 # from torch.utils.tensorboard import SummaryWriter
 
-sys.path.append('..')
 from abmap.model import AbMAPAttn, MultiTaskLossWrapper
 from abmap.utils import evaluate_spearman
 from abmap.dataloader import create_dataloader_sabdab, create_dataloader_libra
