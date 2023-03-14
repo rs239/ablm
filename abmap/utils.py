@@ -47,8 +47,7 @@ def evaluate_spearman(pred, target):
 
 
 def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
-                     anarci_dir='data/anarci_files'):
-    # TODO - handle creation of anarci files
+                     anarci_dir='../data/anarci_files'):
     chothia_nums = {'H': [[26, 32], [52, 56], [96, 101]],
                     'L': [[26, 32], [50, 52], [91, 96]]}
 
