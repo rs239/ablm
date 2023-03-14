@@ -34,6 +34,9 @@ mutate_cat2 = dict_from_group(aa_groupings2)
 
 
 def generate_mutation(sequence, mask, p=0.5, mut_type = "cat1"):
+    '''
+    Increasing p yields more mutations. Consider using a higher p when k is lower
+    '''
 
     if mut_type == "cat1":
         mutate_dict = mutate_cat1
@@ -45,7 +48,7 @@ def generate_mutation(sequence, mask, p=0.5, mut_type = "cat1"):
     # mutation happens here:
     for i, mask_bool in enumerate(mask):
         rand_num = random.uniform(0, 1)
-        if mask_bool and rand_num >= p:
+        if mask_bool and rand_num >= p: 
             seq[i] = random.choice(mutate_dict[seq[i]])
 
     mutated_seq = "".join(seq)

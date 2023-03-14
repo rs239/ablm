@@ -13,13 +13,6 @@ import pandas as pd
 import torch
 import h5py
 
-# sys.path.append('..')
-# sys.path.append('../..')
-# import base_config
-# from utils import get_boolean_mask, find_sequence
-# from mutate import generate_mutation
-# from plm_embed import embed_sequence, reload_models_to_device
-
 # import base_config
 from .utils import get_boolean_mask, find_sequence, parse, log
 from .mutate import generate_mutation

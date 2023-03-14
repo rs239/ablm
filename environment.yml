@@ -3,7 +3,8 @@ dependencies:
 - bioconda::hmmer>=3.0 # NOTE - using biocore as the channel caused dependency issues
 - bioconda::anarci
 - schrodinger::pymol # NOTE - PyMOL 2.5 is on conda-forge: https://pymol.org/conda/
-- conda-forge:tape_proteins
+- conda-forge::tape_proteins
+- ipykernel
 - pip # TODO - specify which pip
 - pip:
   - Bio>=1.5.3
