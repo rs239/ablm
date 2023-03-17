@@ -1,6 +1,6 @@
 """
-Given an augmented embedding and a pre-trained AbMAP model,
-generate an AbMAP embedding (fixed or variable)
+Given fasta sequences and a pre-trained AbMAP model,
+generate their AbMAP embeddings (fixed or variable).
 """
 
 from __future__ import annotations
@@ -68,7 +68,8 @@ def add_args(parser):
 
 def abmap_embed(device, pretrained_path, chain_type, input_file, output_dir, variable_length, plm_name, task):
     """
-    Description Here.
+    Given fasta sequences and a pre-trained AbMAP model,
+    generate their AbMAP embeddings (fixed or variable).
     
     ***
     For Pre-Trained AbMAP models, the augmented embeddings have the following parameters:
@@ -81,11 +82,11 @@ def abmap_embed(device, pretrained_path, chain_type, input_file, output_dir, var
     task_ = 'structure' if task == 0 else 'function'
     output_type = 'variable' if variable_length else 'fixed'
 
+
     dev = torch.device(f'cuda:{device}' if torch.cuda.is_available() else "cpu")
     reload_models_to_device(device, plm_name)
 
     # load pre-trained model into device
-    # pretrained_path = '/net/scratch3/scratch3-3/chihoim/ablm/pretrained_models/AbMAP_beplerberger_H_epoch50.pt' # comment out later
     pretrained = AbMAPAttn(embed_dim=2200, mid_dim2=1024, mid_dim3=512,
                            proj_dim=252, num_enc_layers=1, num_heads=16).to(dev)
     checkpoint = torch.load(pretrained_path, map_location=dev)
