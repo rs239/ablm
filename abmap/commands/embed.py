@@ -6,19 +6,25 @@ generate an AbMAP embedding (fixed or variable)
 from __future__ import annotations
 import argparse
 from ..plm_embed import reload_models_to_device
+from ..abmap_augment import ProteinEmbedding
 from ..model import AbMAPAttn
+from ..utils import parse
 
 from typing import Callable, NamedTuple
 import torch
 import pickle
+from tqdm import tqdm
+import os
 
 class EmbedArguments(NamedTuple):
     cmd: str
     device: int
+    chain_type: str
     pretrained_path: str
     input_path: str
     variable_length: bool
     task: int
+    func: Callable[[EmbedArguments], None]
 
 
 def add_args(parser):
@@ -30,15 +36,19 @@ def add_args(parser):
         "-d", "--device", type=int, default=-1, help="Compute device to use"
     )
     parser.add_argument(
+        "--chain-type", dest="chain_type", choices=['H', 'L'],
+        help="Chain type of the fasta sequences (H or L)", required=True
+    )
+    parser.add_argument(
         "--pretrained-path", dest="pretrained_path",
         help="path for the pre-trained AbMAP Model", required=True
     )
     parser.add_argument(
-        "--input-path", dest="input_path",
-        help="path for the augmented embedding to be inputted to pre-trained AbMAP model", required=True
+        "--input-file", dest="input_file",
+        help="path for fasta file containing sequences to be embeded using the pre-trained AbMAP model", required=True
     )
     parser.add_argument(
-        "--output-path", dest="output_path",
+        "--output-dir", dest="output_dir",
         help="path to save the output AbMAP embedding", required=True
     )
     parser.add_argument(
@@ -56,10 +66,20 @@ def add_args(parser):
     return parser
 
 
-def abmap_embed(device, pretrained_path, input_path, output_path, variable_length, plm_name, task):
+def abmap_embed(device, pretrained_path, chain_type, input_file, output_dir, variable_length, plm_name, task):
     """
     Description Here.
+    
+    ***
+    For Pre-Trained AbMAP models, the augmented embeddings have the following parameters:
+        Foundational PLM: Bepler & Berger
+        CDR-masks (4 extra dims)
+        NO separators
+        # mutations = 100
     """
+    embed_type = 'beplerberger'
+    task_ = 'structure' if task == 0 else 'function'
+    output_type = 'variable' if variable_length else 'fixed'
 
     dev = torch.device(f'cuda:{device}' if torch.cuda.is_available() else "cpu")
     reload_models_to_device(device, plm_name)
@@ -73,30 +93,32 @@ def abmap_embed(device, pretrained_path, input_path, output_path, variable_lengt
     pretrained.eval()
     print("Loaded the Pre-trained Model!")
 
-    # load the input embedding into device
-    # input_path = '/net/scratch3/scratch3-3/chihoim/ablm/data/processed/sabdab/cdrembed_maskaug4/beplerberger/sabdab_7wvm_cat2_H_k100.p' # comment out later
-    with open(input_path, 'rb') as p:
-        input_embed = pickle.load(p).to(dev)
-    input_embed = torch.unsqueeze(input_embed, 0)
-    try:
-        assert len(input_embed.shape) == 3
-    except:
-        raise ValueError("input embedding should be of shape n'(CDR length) x d")
-
-    # generate the abmap embedding
-    with torch.no_grad():
-        if variable_length:
-            out_feature, _ = pretrained(input_embed, input_embed, None, None, task=task, return3=True)
-        else:
-            out_feature, _ = pretrained(input_embed, input_embed, None, None, task=task, task_specific=True)
-    out_feature = torch.squeeze(out_feature, 0)
-    print("out feature shape:", out_feature.shape)
-
-    # save the abmap embedding
-    with open(output_path, 'wb') as f:
-        pickle.dump(out_feature.cpu(), f)
+    # get the names and sequences of fasta files
+    names, seqs = parse(input_file)
     
+    # check if outputPath is an existing directory:
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    # generate the embeddings for fasta sequences:    
+    for (name, seq) in tqdm(zip(names, seqs), total=len(names)):
+        fname = os.path.join(output_dir, f'{name}_AbMAP.p')
+        if not os.path.isfile(fname):
+
+            prot = ProteinEmbedding(seq, chain_type, embed_device=f'cuda:{device}')
+            z = prot.create_cdr_specific_embedding(embed_type)
+            z = torch.unsqueeze(z, dim=0).to(dev)
+
+            with torch.no_grad():
+                output = pretrained.embed(z, task=task_, embed_type=output_type)
+            output = torch.squeeze(output, dim=0)
+            
+            # save the abmap embedding
+            with open(fname, 'wb') as f:
+                pickle.dump(output.cpu(), f)
+                
     return
+                
 
 
 def main(args):
@@ -105,13 +127,14 @@ def main(args):
     :meta private:
     """
     device = args.device
+    chain_type = args.chain_type
     pretrained_path = args.pretrained_path
-    input_path = args.input_path
-    output_path = args.output_path
+    input_file = args.input_file
+    output_dir = args.output_dir
     variable_length = args.variable_length
     plm_name = args.plm_name
     task = args.task
-    abmap_embed(device, pretrained_path, input_path, output_path,
+    abmap_embed(device, pretrained_path, chain_type, input_file, output_dir,
                  variable_length, plm_name, task)
 
 
