@@ -1,9 +1,6 @@
 import torch
 from . import base_config
 
-from dscript import language_model as lm
-from dscript import pretrained as ds_pre
-from dscript.alphabets import Uniprot21
 import re
 
 
@@ -15,6 +12,7 @@ def reload_models_to_device(device_num=0, plm_type='beplerberger'):
 
     ######### Bepler & Berger ########
     if plm_type == 'beplerberger':
+        from dscript import pretrained as ds_pre
         global bb_model
         bb_model = ds_pre.get_pretrained("lm_v1")
         bb_model = bb_model.to(device)
@@ -114,6 +112,7 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
 
 
     elif embed_type == "dscript":
+        from dscript.alphabets import Uniprot21
         assert embed_device is None and embed_model is None # not implemented yet
         # print("using D-Script Embedding (Bepler&Berger + projection)...")
         with torch.no_grad():

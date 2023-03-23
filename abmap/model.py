@@ -141,7 +141,8 @@ class AbMAPAttn(nn.Module):
   
         
     
-    def forward(self, x1, x2, x1_mask, x2_mask, task, return1 = False, return2 = False, return3 = False, task_specific = False):
+    def forward(self, x1, x2, x1_mask, x2_mask, task, return1 = False, return2 = False, return3 = False, 
+                task_specific = False, return_cossim = False):
         
         ### Project both inputs x1 and x2 to a lower dimension through several linear + LayerNorm layers
         ### x1 and x2 are CDR-specific embeddings of antibody sequences
@@ -200,12 +201,6 @@ class AbMAPAttn(nn.Module):
         x1, x2 = F.normalize(x1), F.normalize(x2)
         x1_, x2_ = F.normalize(x1_), F.normalize(x2_)
 
-        # take the cosine sim of logsumexps/means:
-        # pred = torch.unsqueeze(self.cossim(x1, x2), dim=-1)
-        # return torch.reshape(pred, (-1,)), x1, x2
-        # pred = torch.unsqueeze(self.cossim(x1_, x2_), dim=-1)
-        # return torch.reshape(pred, (-1,)), x1_, x2_
-
         # ---------------------------------------
         # concatenate mean and logsumexp
         x1 = torch.cat((x1_, x1), dim=-1)
@@ -218,6 +213,9 @@ class AbMAPAttn(nn.Module):
 
         # Take cosine similarity of two embeddings
         pred = torch.unsqueeze(self.cossim(x1, x2), dim=-1)
+
+        if return_cossim:
+            return torch.reshape(pred, (-1,)), x1, x2
 
         # Transform cossim for either structure or function
         pred = transform(pred)
