@@ -18,13 +18,24 @@ def reload_models_to_device(device_num=0, plm_type='beplerberger'):
         bb_model = bb_model.to(device)
         bb_model.eval()
 
-    ######### ESM-1b ##########
-    elif plm_type == 'esm1b':
+    ######### ESM-1b or ESM-2 ##########
+    elif plm_type in ('esm1b', 'esm2'):
         global esm_model, esm_batch_converter
-        esm_model, esm_alphabet = torch.hub.load("facebookresearch/esm", "esm1b_t33_650M_UR50S")
+        if plm_type == 'esm1b':
+            esm_model, esm_alphabet = torch.hub.load("facebookresearch/esm:main", "esm1b_t33_650M_UR50S")
+        else:
+            esm_model, esm_alphabet = torch.hub.load("facebookresearch/esm:main", "esm2_t33_650M_UR50D")
         esm_batch_converter = esm_alphabet.get_batch_converter()
         esm_model = esm_model.to(device)
         esm_model.eval()
+    
+    ######### ESM-2 ##########
+    # elif plm_type == 'esm2':
+    #     global esm_model, esm_batch_converter
+    #     esm_model, esm_alphabet = torch.hub.load("facebookresearch/esm:main", "esm2_t33_650M_UR50D")
+    #     esm_batch_converter = esm_alphabet.get_batch_converter()
+    #     esm_model = esm_model.to(device)
+    #     esm_model.eval()
 
     ######### TAPE ##########
     elif plm_type == 'tape':
@@ -71,7 +82,7 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
             return z.detach().cpu()[0]
 
 
-    elif embed_type == "esm1b":
+    elif embed_type == "esm1b" or embed_type == "esm2":
         # print("using FAIR's esm-1b...")
 
         data = [
