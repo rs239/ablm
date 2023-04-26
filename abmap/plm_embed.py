@@ -1,5 +1,6 @@
 import torch
-from . import base_config
+# from . import base_config
+import base_config
 
 from dscript import language_model as lm
 from dscript import pretrained as ds_pre
