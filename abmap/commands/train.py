@@ -80,7 +80,7 @@ def add_args(parser):
                         help='Decay rate for the lr scheduler.')
 
     parser.add_argument('--emb_type', type=str, default='beplerberger',
-                        choices=['beplerberger', 'esm1b', 'tape', 'dscript', 'concat', 'protbert'],
+                        choices=['beplerberger', 'esm1b', 'esm2', 'tape', 'dscript', 'concat', 'protbert'],
                         help='Embedding Type.')
 
     parser.add_argument('--model_loadpath', type=str, default='None',
@@ -139,7 +139,7 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
     if emb_type == 'protbert':
         model = AbMAPAttn(embed_dim=1024, mid_dim2=512, mid_dim3=256, 
                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(device)
-    if emb_type == 'esm1b':
+    if emb_type == 'esm1b' or emb_type == 'esm2':
         model = AbMAPAttn(embed_dim=1280, mid_dim2=512, mid_dim3=256, 
                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(device)
     if emb_type == 'tape':
@@ -152,7 +152,7 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
     if model_loadpath == 'None':
         prev_epochs = 0
         optimizer = opt.SGD([{'params': model.parameters()},
-                             {'params': loss_wrapper.parameters(), 'lr': 1e-3},], lr=lr)
+                             {'params': loss_wrapper.parameters(), 'lr': lr*0.1},], lr=lr)
         scheduler = MultiStepLR(optimizer, milestones=[40, 45], gamma=gamma)
     else:
         checkpoint = torch.load(model_loadpath, map_location=torch.device("cuda:{}".format(device_num)))
@@ -444,7 +444,7 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
             logs[k]["val_spearmans"] = plots_dict['val_spearmans']
 
     if log_name != None:
-        with open("../../logs/{}.p".format(log_name), "wb") as f:
+        with open(f"{log_name}.p", "wb") as f:
             pickle.dump(logs, f)
 
     end_time = time.time()
