@@ -1,5 +1,7 @@
 # AbMAP: Antibody Mutagenesis-Augmented Processing
-Protein language model customized for antibodies
+*This repository is a work in progress.*
+
+Protein language model customized for antibodies.
 
 ## Commands:
 ### Augment
