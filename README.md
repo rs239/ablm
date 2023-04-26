@@ -1,6 +1,10 @@
-# ablm
+# AbMAP: Antibody Mutagenesis-Augmented Processing
 Protein language model customized for antibodies
 
+## Commands:
+### Augment
+### Train
+### Embed
 
 ## Reference
 <a id="1">[1]</a>
