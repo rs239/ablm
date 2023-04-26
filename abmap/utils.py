@@ -70,10 +70,10 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
 
     # increase each CDR region by 1 at each end if buffer_region
     if buffer_region:
-        for chain_type in all_regions.keys():
-            for i, cdr_region in enumerate(all_regions[chain_type]):
-                all_regions[chain_type][i][0] -= 1
-                all_regions[chain_type][i][1] += 1
+        for c_type in all_regions.keys():
+            for i, cdr_region in enumerate(all_regions[c_type]):
+                all_regions[c_type][i][0] -= 1
+                all_regions[c_type][i][1] += 1
 
     # change temp_path to a folder you'd like to save your ANARCI file to
     # temp_path = "/net/scratch3.mit.edu/scratch3-3/chihoim/misc/temp{}".format(fold)
@@ -88,6 +88,9 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
 
     os.system('ANARCI -i {} --csv -o {} -s {}'.format(sequence, temp_name, scheme))
     
+    ### debug!
+    # print("chain_type variable:", chain_type)
+
     regions = all_regions[chain_type]
     if chain_type == 'H':
         file_name = glob.glob(anarci_dir+'/'+'*{}_H.csv'.format(dev))[0]
