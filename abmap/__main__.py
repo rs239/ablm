@@ -7,9 +7,9 @@ import os
 import sys
 from typing import Union
 
-from .commands.augment import AugmentArguments
-from .commands.train import TrainArguments
-from .commands.embed import EmbedArguments
+from abmap.commands.augment import AugmentArguments
+from abmap.commands.train import TrainArguments
+from abmap.commands.embed import EmbedArguments
 
 AbMAPArguments = Union[AugmentArguments, TrainArguments, EmbedArguments]
 

@@ -11,14 +11,12 @@ import glob
 import numpy as np
 import csv
 
-from abmap_augment import ProteinEmbedding
-from utils import find_sequence
-from plm_embed import reload_models_to_device
+from abmap.abmap_augment import ProteinEmbedding
+from abmap.utils import find_sequence
+from abmap.plm_embed import reload_models_to_device
 
 import psico.fullinit
 from pymol import cmd
-
-
 
 def init(dev_num, c_type, region, which_set):
     global chain_type, prot_region

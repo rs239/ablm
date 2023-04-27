@@ -1,7 +1,6 @@
 import torch
-import base_config
+import abmap.base_config as base_config
 import re
-import transformers
 
 
 
