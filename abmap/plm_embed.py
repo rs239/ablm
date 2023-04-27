@@ -1,5 +1,5 @@
 import torch
-from . import base_config
+import base_config
 
 import re
 
@@ -8,7 +8,7 @@ import re
 def reload_models_to_device(device_num=0, plm_type='beplerberger'):
     base_config.device = "cuda:{}".format(device_num)
     device = torch.device(base_config.device if torch.cuda.is_available() else "cpu")
-    print(device)
+    print(f'{plm_type} loaded to {device}')
 
     ######### Bepler & Berger ########
     if plm_type == 'beplerberger':

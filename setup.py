@@ -29,5 +29,7 @@ setup(
         "tqdm",
         "scikit-learn",
         "h5py",
+        "transformers",
+        "positional_encodings"
     ],
 )

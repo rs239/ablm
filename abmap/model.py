@@ -2,7 +2,7 @@ import os
 import torch
 from torch import nn
 import torch.nn.functional as F
-from positional_encodings import PositionalEncoding1D
+from positional_encodings.torch_encodings import PositionalEncoding1D
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad is True)
@@ -221,6 +221,37 @@ class AbMAPAttn(nn.Module):
         pred = transform(pred)
 
         return torch.reshape(pred, (-1,)), x1, x2
+
+
+    # def embed_dir(self, device, input_path, variable_length, task):
+        # TODO - implement this?   
+    #     dev = torch.device(f'cuda:{device}' if torch.cuda.is_available() else "cpu")
+
+    #     # Get list of files or casts single file as a list
+    #     if os.path.isdir(input_path): input_iter = os.listdir(input_path)
+    #     elif os.path.isfile(input_path): input_iter = list(input_path)
+        
+    #     outputs = []
+    #     for input in input_iter:
+    #         with open(input, 'rb') as p:
+    #             input_embed = pickle.load(p).to(dev)
+    #         input_embed = torch.unsqueeze(input_embed, 0)
+    #         try:
+    #             assert len(input_embed.shape) == 3
+    #         except:
+    #             raise ValueError("input embedding should be of shape n'(CDR length) x d")
+
+    #         # generate the abmap embedding
+    #         with torch.no_grad():
+    #             if variable_length:
+    #                 out_feature, _ = pretrained.embed(input_embed, task=task, embed_type='variable')
+    #             else:
+    #                 out_feature, _ = pretrained.embed(input_embed, task=task, embed_type='fixed')
+    #         out_feature = torch.squeeze(out_feature, 0)
+    #         outputs.append(out_feature)
+            
+    #         return outputs
+            
 
 
 class AbMAPLSTM(nn.Module):

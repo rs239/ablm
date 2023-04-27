@@ -1,4 +1,7 @@
-# from ablm import main # TODO - change name of main to abml or abmap? Would allow (from ablm import abmap)
+from abmap.abmap_augment import ProteinEmbedding, augment_from_fasta
+from abmap.plm_embed import reload_models_to_device
+from abmap.model import AbMAPAttn, AbMAPLSTM
+from abmap.commands.embed import load_abmap, abmap_embed, abmap_embed_batch
 
 __version__ = "0.0.64"
 # __citation__ = """"""
