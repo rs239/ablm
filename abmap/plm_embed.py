@@ -1,5 +1,6 @@
 import torch
 import abmap.base_config as base_config
+from dscript.alphabets import Uniprot21
 import re
 
 
