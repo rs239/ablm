@@ -1,10 +1,8 @@
 import os, sys
 
-sys.path.append('../ablm')
-
-from abmap_embed import ProteinEmbedding
-from model import AbMAPAttn
-from plm_embed import reload_models_to_device
+from abmap.plm_embed import ProteinEmbedding
+from abmap.model import AbMAPAttn
+from abmap.plm_embed import reload_models_to_device
 import torch
 from torch import nn
 
