@@ -2,7 +2,7 @@ import os
 import torch
 from torch import nn
 import torch.nn.functional as F
-from positional_encodings import PositionalEncoding1D
+from positional_encodings.torch_encodings import PositionalEncoding1D
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad is True)

@@ -5,10 +5,15 @@ generate their AbMAP embeddings (fixed or variable).
 
 from __future__ import annotations
 import argparse
-from ..plm_embed import reload_models_to_device
-from ..abmap_augment import ProteinEmbedding
-from ..model import AbMAPAttn
-from ..utils import parse
+# from ..plm_embed import reload_models_to_device
+# from ..abmap_augment import ProteinEmbedding
+# from ..model import AbMAPAttn
+# from ..utils import parse
+
+from abmap.plm_embed import reload_models_to_device
+from abmap.abmap_augment import ProteinEmbedding
+from abmap.model import AbMAPAttn
+from abmap.utils import parse
 
 from typing import Callable, NamedTuple
 import torch
