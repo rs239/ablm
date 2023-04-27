@@ -30,6 +30,7 @@ setup(
         "scikit-learn",
         "h5py",
         "transformers",
-        "positional_encodings"
+        "positional_encodings",
+        "dscript"
     ],
 )
