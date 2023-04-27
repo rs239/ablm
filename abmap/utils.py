@@ -153,14 +153,14 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
     return cdr_mask
 
 
-def find_sequence(pdb_id = ''):
+def find_sequence(root_path, pdb_id = ''):
     """
     given a dataset, find the heavy and light chain sequences
     """
 
-    path = '../data/raw/sabdab/sabdab_dataset'
+    # path = '../data/raw/sabdab/sabdab_dataset'
 
-    prot_path = os.path.join(path, pdb_id, "sequence")
+    prot_path = os.path.join(root_path, pdb_id, "sequence")
 
     # reading the heavy chain sequence
     h = glob.glob(prot_path+"/"+pdb_id+"_*_VH.fa")

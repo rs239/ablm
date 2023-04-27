@@ -269,7 +269,7 @@ def augment_from_fasta(fastaPath, outputPath, chain_type, embed_type,
             fname = os.path.join(outputPath, f'{name}.p')
             if not os.path.isfile(fname):
             # if name not in h5fi:
-                prot = ProteinEmbedding(seq, chain_type, embed_device=f'cuda:{device}')
+                prot = ProteinEmbedding(seq, chain_type, embed_device=f'cuda:{device}', dev=device)
                 if num_mutations > 0:
                     z = prot.create_cdr_specific_embedding(embed_type, num_mutations,
                                                                         separators, cdr_masks)

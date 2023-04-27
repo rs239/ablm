@@ -29,14 +29,6 @@ def reload_models_to_device(device_num=0, plm_type='beplerberger'):
         esm_model = esm_model.to(device)
         esm_model.eval()
     
-    ######### ESM-2 ##########
-    # elif plm_type == 'esm2':
-    #     global esm_model, esm_batch_converter
-    #     esm_model, esm_alphabet = torch.hub.load("facebookresearch/esm:main", "esm2_t33_650M_UR50D")
-    #     esm_batch_converter = esm_alphabet.get_batch_converter()
-    #     esm_model = esm_model.to(device)
-    #     esm_model.eval()
-
     ######### TAPE ##########
     elif plm_type == 'tape':
         global tape_model, tape_tokenizer
