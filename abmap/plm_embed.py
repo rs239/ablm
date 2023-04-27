@@ -58,6 +58,7 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
         device = torch.device(embed_device)
 
     if embed_type == "beplerberger":
+        from dscript.alphabets import Uniprot21
         # print("using Bepler & Berger's Embedding...")
 
         with torch.no_grad():

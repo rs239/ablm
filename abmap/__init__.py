@@ -3,7 +3,7 @@ from abmap.plm_embed import reload_models_to_device
 from abmap.model import AbMAPAttn, AbMAPLSTM
 from abmap.commands.embed import load_abmap, abmap_embed, abmap_embed_batch
 
-__version__ = "0.0.71"
+__version__ = "0.0.72"
 # __citation__ = """"""
 from . import (
     commands,
