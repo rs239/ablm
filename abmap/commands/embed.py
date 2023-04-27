@@ -10,6 +10,8 @@ from abmap.plm_embed import reload_models_to_device
 from abmap.abmap_augment import ProteinEmbedding
 from abmap.model import AbMAPAttn
 from abmap.utils import parse
+import sys
+sys.path.append('../') # for access to model.py when calling torch.load()
 
 from typing import Callable, NamedTuple
 import torch

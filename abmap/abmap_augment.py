@@ -244,9 +244,7 @@ def augment_from_fasta(fastaPath, outputPath, chain_type, embed_type,
     if use_cuda:
         torch.cuda.set_device(device)
         if verbose:
-            log(
-                f"# Using CUDA device {device} - {torch.cuda.get_device_name(device)}"
-            )
+            log(f"# Using CUDA device {device} - {torch.cuda.get_device_name(device)}")
     else:
         if verbose:
             log("# Using CPU")
