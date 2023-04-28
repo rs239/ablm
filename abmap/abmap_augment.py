@@ -13,10 +13,9 @@ import pandas as pd
 import torch
 import h5py
 
-# import base_config
-from .utils import get_boolean_mask, find_sequence, parse, log
-from .mutate import generate_mutation
-from .plm_embed import embed_sequence, reload_models_to_device
+from abmap.utils import get_boolean_mask, find_sequence, parse, log
+from abmap.mutate import generate_mutation
+from abmap.plm_embed import embed_sequence, reload_models_to_device
 
 
 class ProteinEmbedding:
@@ -245,9 +244,7 @@ def augment_from_fasta(fastaPath, outputPath, chain_type, embed_type,
     if use_cuda:
         torch.cuda.set_device(device)
         if verbose:
-            log(
-                f"# Using CUDA device {device} - {torch.cuda.get_device_name(device)}"
-            )
+            log(f"# Using CUDA device {device} - {torch.cuda.get_device_name(device)}")
     else:
         if verbose:
             log("# Using CPU")

@@ -9,10 +9,9 @@ import random
 
 from torch.nn.utils.rnn import pad_sequence
 
-sys.path.append("..")
-from protein_embedding import ProteinEmbedding
-from model import AbMAP
-from embed import reload_models_to_device
+from abmap.abmap_augment import ProteinEmbedding
+from abmap.model import AbMAPAttn
+from abmap.plm_embed import reload_models_to_device
 
 def generate_embeddings(args):
     reload_models_to_device(args.device_num)

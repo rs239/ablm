@@ -1,6 +1,6 @@
 import torch
-from . import base_config
-
+import abmap.base_config as base_config
+from dscript.alphabets import Uniprot21
 import re
 
 
@@ -8,7 +8,7 @@ import re
 def reload_models_to_device(device_num=0, plm_type='beplerberger'):
     base_config.device = "cuda:{}".format(device_num)
     device = torch.device(base_config.device if torch.cuda.is_available() else "cpu")
-    print(device)
+    print(f'{plm_type} loaded to {device}')
 
     ######### Bepler & Berger ########
     if plm_type == 'beplerberger':
@@ -58,6 +58,7 @@ def embed_sequence(sequence, embed_type = "beplerberger", embed_device = None, e
         device = torch.device(embed_device)
 
     if embed_type == "beplerberger":
+        from dscript.alphabets import Uniprot21
         # print("using Bepler & Berger's Embedding...")
 
         with torch.no_grad():

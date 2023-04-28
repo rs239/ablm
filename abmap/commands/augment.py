@@ -5,7 +5,7 @@ in-silico mutagenesis and CDR isolation.
 
 from __future__ import annotations
 import argparse
-from ..abmap_augment import augment_from_fasta
+from abmap.abmap_augment import augment_from_fasta
 
 from typing import Callable, NamedTuple
 
