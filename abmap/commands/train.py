@@ -353,7 +353,7 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
                 #             'optimizer_state_dict': optimizer.state_dict(),
                             # 'model_attn_weights': [raw_model.attn_wts_s, raw_model.attn_wts_f],
                             # 'loss_wrapper': loss_wrapper}
-                model_sum = {'model_state_dict': raw_model.state_dict()}
+                model_sum = raw_model.state_dict()
                 savepath = os.path.join(model_savepath, 'AbMAP_{}_{}_epoch{}.pt'.format(emb_type, chain_type, prev_epochs+i+1))
                 torch.save(model_sum, savepath)
 

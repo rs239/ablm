@@ -198,6 +198,7 @@ class AbMAPAttn(nn.Module):
         x1 = torch.log(torch.sum(torch.exp(x1), dim=1))
         x2 = torch.log(torch.sum(torch.exp(x2), dim=1))
 
+        # original normalization location
         x1, x2 = F.normalize(x1), F.normalize(x2)
         x1_, x2_ = F.normalize(x1_), F.normalize(x2_)
 
@@ -206,6 +207,8 @@ class AbMAPAttn(nn.Module):
         x1 = torch.cat((x1_, x1), dim=-1)
         x2 = torch.cat((x2_, x2), dim=-1)
         # ---------------------------------------
+
+        # x1, x2 = F.normalize(x1), F.normalize(x2)
 
         # Output fixed-length embedding here. These are the concat of the mean and LogSumExp over the residue embeddings
         if task_specific:
@@ -327,9 +330,6 @@ class MultiTaskLossWrapper(nn.Module):
         loss_f = precision_f*loss_f
         
         return loss_s + loss_f
-
-        # loss_total = self.weights[0]*loss_s + self.weights[1]*loss_f
-        # return loss_total
 
 
 class BrineyPredictor(nn.Module):
