@@ -1,4 +1,6 @@
 # AbMAP: Antibody Mutagenesis-Augmented Processing
+![image](https://user-images.githubusercontent.com/6614489/235450484-2ad78557-0deb-43fb-ba8d-6fb570c3a052.png)
+
 *This repository is a work in progress.*
 
 This repository contains code and pre-trained model checkpoints for AbMAP, a Protein Language Model (PLM) customized for antibodies as featured in **Learning the Language of Antibody Hypervariability** (_Singh, Im et al. 2023_) [Link](https://www.biorxiv.org/content/10.1101/2023.04.26.538476). AbMAP leverages information from foundational PLMs as well as antibody structure and function, offering a multi-functional tool useful for predicting structure, functional properties, and analyzing B-cell repertoires.
