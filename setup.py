@@ -7,7 +7,7 @@ setup(
     name="abmap",
     version=abmap.__version__,
     description="AbMAP: Antibody Mutagenesis Augmented Processing",
-    author="Chiho Im",
+    author="Chiho Im, Taylor Sorenson, Abhinav Gupta, Rohit Singh",
     author_email="chihoim@mit.edu",
     # url="http://dscript.csail.mit.edu",
     license="MIT",
