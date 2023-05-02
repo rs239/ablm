@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
-import abmap
+# import abmap
 
 setup(
     name="abmap",
