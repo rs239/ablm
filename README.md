@@ -6,8 +6,9 @@
 This repository contains code and pre-trained model checkpoints for AbMAP, a Protein Language Model (PLM) customized for antibodies as featured in **Learning the Language of Antibody Hypervariability** ([_Singh, Im et al. 2023_](https://www.biorxiv.org/content/10.1101/2023.04.26.538476)). AbMAP leverages information from foundational PLMs as well as antibody structure and function, offering a multi-functional tool useful for predicting structure, functional properties, and analyzing B-cell repertoires.
 
 ### Installation
-AbMAP relies on ANARCI to assign IMGT labels to antibody sequences. Please see the [ANARCI](https://github.com/oxpig/ANARCI/blob/master/INSTALL) repo or run the following. 
+AbMAP relies on ANARCI to assign IMGT labels to antibody sequences. Please see the [ANARCI](https://github.com/oxpig/ANARCI/blob/master/INSTALL) repo or run the following in a new conda environment: 
 ```bash
+conda install -c biocore hmmer # Can also install using `brew/port/apt/yum install hmmer`
 git clone https://github.com/oxpig/ANARCI.git
 cd ANARCI
 python setup.py install
