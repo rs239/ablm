@@ -1,6 +1,6 @@
 [project]
 name = "abmap"
-version = "0.0.72"
+version = "0.0.88"
 authors = [
   { name="Chiho Im", email="chihoim@mit.edu" },
   { name="Rohit Singh", email="rohitsingh@gmail.com" }

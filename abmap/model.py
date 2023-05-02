@@ -342,10 +342,10 @@ class AbMAPLSTM(nn.Module):
 
 
 class MultiTaskLossWrapper(nn.Module):
-    def __init__(self, task_num):
+    def __init__(self, task_num, init_alpha, update_alpha):
         super(MultiTaskLossWrapper, self).__init__()
         self.task_num = task_num
-        self.weights = nn.Parameter(torch.tensor(-2.0)) # if -2.0, alpha = e^2 = 7.xx
+        self.weights = nn.Parameter(torch.tensor(init_alpha), requires_grad=update_alpha) # if -2.0, alpha = e^2 = 7.xx
         self.loss_fn = nn.MSELoss()
         self.loss_s, self.loss_f = None, None
         self.alpha = None
@@ -357,7 +357,6 @@ class MultiTaskLossWrapper(nn.Module):
         self.loss_s, self.loss_f = loss_s, loss_f
 
         precision_s = torch.exp(-self.weights)
-        precision_s = torch.tensor(7.0)
         loss_s = precision_s*loss_s
         self.alpha = precision_s
 

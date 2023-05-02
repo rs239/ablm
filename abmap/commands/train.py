@@ -29,7 +29,7 @@ type_to_dim = {'beplerberger':6165, 'esm1b':1280, 'tape':768, 'dscript':100}
 class TrainArguments(NamedTuple):
     cmd: str
     device_num: int
-    log_name: str
+    log_file: str
     exec_type: str
     num_epochs: int
     embed_dir: str
@@ -45,14 +45,15 @@ class TrainArguments(NamedTuple):
     chain_type: str
     region: str
     lambda1: float
-    alpha: float
+    init_alpha: float
+    update_alpha: bool
 
 
 def add_args(parser):
     parser.add_argument('--device_num', type=int, default=0,
                         help='Indicate which GPU device to train the model on')
 
-    parser.add_argument('--log_name', type=str,
+    parser.add_argument('--log_file', type=str,
                         help='Name of the log file with plot values.')
 
     parser.add_argument('--exec_type', type=str, default='train',
@@ -81,7 +82,6 @@ def add_args(parser):
                         help='Decay rate for the lr scheduler.')
 
     parser.add_argument('--emb_type', type=str, default='beplerberger',
-                        choices=['beplerberger', 'esm1b', 'tape', 'dscript', 'concat', 'protbert'],
                         help='Embedding Type.')
 
     parser.add_argument('--model_loadpath', type=str, default='None',
@@ -104,18 +104,21 @@ def add_args(parser):
     parser.add_argument('--lambda1', type=float, default=0.0005,
                         help='Weight on the regularization loss')
 
-    parser.add_argument('--alpha', type=float, default = 7,
-                        help='Weight on the mse losses')
+    parser.add_argument('--init_alpha', type=float, default = 0.0,
+                        help='Weight on the mse losses. 0 means an equal weight.')
+
+    parser.add_argument('--update_alpha', action="store_true", dest='update_alpha',
+                        help='The alpha value for the mse losses will be updated iteratively.')
 
     return parser
 
 
-def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, model_savepath, region,
-                embed_dir, batch_size, chain_type, alpha, lambda1, print_every=100, lr=0.01, emb_type='beplerberger', 
-                ckpt_every=10, mut_type='cat2', gamma=0.5, **kwargs):
+def train_model(device_num, log_file, exec_type, num_epochs, model_loadpath, model_savepath, region,
+                embed_dir, batch_size, chain_type, init_alpha, update_alpha, lambda1, print_every=100, 
+                lr=0.01, emb_type='beplerberger', ckpt_every=10, mut_type='cat2', gamma=0.5, **kwargs):
     start_time = time.time()
 
-    if log_name == None:
+    if log_file == None:
         print("Your log will not be saved...")
 
     device = torch.device("cuda:{}".format(device_num) if torch.cuda.is_available() else "cpu")
@@ -137,17 +140,20 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
     if emb_type == 'beplerberger':
         model = AbMAPAttn(embed_dim=2200, mid_dim2=1024, mid_dim3=512, 
                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(device)
-    if emb_type == 'protbert':
+    elif emb_type == 'protbert':
         model = AbMAPAttn(embed_dim=1024, mid_dim2=512, mid_dim3=256, 
                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(device)
-    if emb_type == 'esm1b':
+    elif emb_type == 'esm1b' or emb_type == 'esm2':
         model = AbMAPAttn(embed_dim=1280, mid_dim2=512, mid_dim3=256, 
                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(device)
-    if emb_type == 'tape':
+    elif emb_type == 'tape':
         model = AbMAPAttn(embed_dim=768, mid_dim2=256, mid_dim3=128, 
                                      proj_dim=60, num_enc_layers=1, num_heads=8).to(device)
+    else:
+        raise ValueError(f"The Embed Type {emb_type} Doesn't Exist!")
+
     loss_fn = nn.MSELoss()
-    loss_wrapper = MultiTaskLossWrapper(2).to(device)
+    loss_wrapper = MultiTaskLossWrapper(2, init_alpha, update_alpha).to(device)
     # loss_opt = opt.SGD(loss_wrapper.parameters(), lr=lr)
     
     if model_loadpath == 'None':
@@ -220,16 +226,7 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
                     reg_term += em_sq*torch.log(em_sq + 1e-7)
                 reg_loss = lambda1*torch.sum(reg_term)
 
-
-                if i < 0:
-                    mse_loss_s = loss_fn(pred_s, tmscore.cuda(device))
-                    mse_loss_f = loss_fn(pred_f, func_sc.cuda(device))
-
-                    # mse_loss = mse_loss_s + mse_loss_f
-                    mse_loss = mse_loss_s*alpha + mse_loss_f/alpha
-                    alpha_print = alpha
-                else:
-                    mse_loss = loss_wrapper(pred_s, tmscore.cuda(device), pred_f, func_sc.cuda(device))
+                mse_loss = loss_wrapper(pred_s, tmscore.cuda(device), pred_f, func_sc.cuda(device))
 
                 total_reg_loss += reg_loss.item()
                 total_mse_loss += mse_loss.item()
@@ -250,8 +247,6 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
 
                 # print intermediate loss values
                 if k % print_every == 0:
-                    # writer.add_scalar('Loss/train', total_loss/(k+1), stept)#i+(k+1)*batch_size/train_size)
-                    # stept += 1
                     print("TRAIN Epoch {}, Batch {}, MSE Loss S: {}, MSE Loss F: {}, Reg Loss: {}, Alpha: {}".format(prev_epochs+i+1, 
                                             k, total_mse_loss_s/(k+1), total_mse_loss_f/(k+1), total_reg_loss/(k+1), loss_wrapper.alpha.item()))
 
@@ -307,13 +302,8 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
                     reg_loss = lambda1*torch.sum(reg_term)
                     # reg_loss = lambda1*torch.sum((e1_s - unit_norm)**2 + (e2_s - unit_norm)**2 + (e1_f - unit_norm)**2 + (e2_f - unit_norm)**2)
 
-                    if i < 0:
-                        mse_loss_s = loss_fn(pred_s, tmscore.cuda(device))
-                        mse_loss_f = loss_fn(pred_f, func_sc.cuda(device))
-                        # mse_loss = mse_loss_s + mse_loss_f
-                        mse_loss = mse_loss_s*alpha + mse_loss_f/alpha
-                    else:
-                        mse_loss = loss_wrapper(pred_s, tmscore.cuda(device), pred_f, func_sc.cuda(device))
+                    mse_loss = loss_wrapper(pred_s, tmscore.cuda(device), pred_f, func_sc.cuda(device))
+
 
                     total_reg_loss += reg_loss.item()
                     total_mse_loss += mse_loss.item()
@@ -350,10 +340,6 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
                     os.mkdir(model_savepath)
 
                 raw_model = model.module if hasattr(model, "module") else model
-                # model_sum = {'epoch':prev_epochs+i, 'model_state_dict': raw_model.state_dict(),
-                #             'optimizer_state_dict': optimizer.state_dict(),
-                            # 'model_attn_weights': [raw_model.attn_wts_s, raw_model.attn_wts_f],
-                            # 'loss_wrapper': loss_wrapper}
                 model_sum = raw_model.state_dict()
                 savepath = os.path.join(model_savepath, 'AbMAP_{}_{}_epoch{}.pt'.format(emb_type, chain_type, prev_epochs+i+1))
                 torch.save(model_sum, savepath)
@@ -444,8 +430,8 @@ def train_model(device_num, log_name, exec_type, num_epochs, model_loadpath, mod
             logs[k]["train_spearmans"] = plots_dict['train_spearmans']
             logs[k]["val_spearmans"] = plots_dict['val_spearmans']
 
-    if log_name != None:
-        with open("../../logs/{}.p".format(log_name), "wb") as f:
+    if log_file != None:
+        with open(log_file, "wb") as f:
             pickle.dump(logs, f)
 
     end_time = time.time()
