@@ -124,9 +124,9 @@ def abmap_embed_batch(device, pretrained_path, input_path, variable_length, plm_
         # generate the abmap embedding
         with torch.no_grad():
             if variable_length:
-                out_feature, _ = pretrained.embed(input_embed, task=task, embed_type='variable')
+                out_feature = pretrained.embed(input_embed, task=task, embed_type='variable')
             else:
-                out_feature, _ = pretrained.embed(input_embed, task=task, embed_type='fixed')
+                out_feature = pretrained.embed(input_embed, task=task, embed_type='fixed')
         out_feature = torch.squeeze(out_feature, 0)
         outputs.append(out_feature)
         
