@@ -111,7 +111,7 @@ def abmap_embed_batch(device, pretrained_path, input_path, output_path, variable
     elif os.path.isfile(input_path): input_iter = list(input_path)
     
     outputs = []
-    for input in input_iter:
+    for input in tqdm(input_iter):
         with open(input, 'rb') as p:
             input_embed = pickle.load(p).to(dev)
         input_embed = torch.unsqueeze(input_embed, 0)
