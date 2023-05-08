@@ -99,7 +99,7 @@ def load_abmap(pretrained_path, plm_name, device=0):
     return pretrained
 
 
-def abmap_embed_batch(device, pretrained_path, input_path, output_path, variable_length, plm_name, task):
+def abmap_embed_batch(device, pretrained_path, input_path, variable_length, plm_name, task):
     '''
     Like abmap_embed, but works for a directory of inputs
     '''
@@ -112,7 +112,8 @@ def abmap_embed_batch(device, pretrained_path, input_path, output_path, variable
     
     outputs = []
     for input in tqdm(input_iter):
-        with open(input, 'rb') as p:
+        input_ = os.path.join(input_path, input)
+        with open(input_, 'rb') as p:
             input_embed = pickle.load(p).to(dev)
         input_embed = torch.unsqueeze(input_embed, 0)
         try:
@@ -129,7 +130,7 @@ def abmap_embed_batch(device, pretrained_path, input_path, output_path, variable
         out_feature = torch.squeeze(out_feature, 0)
         outputs.append(out_feature)
         
-        return outputs
+    return outputs
 
         
 def abmap_embed(device, pretrained_path, chain_type, input_file, output_dir, variable_length, plm_name, task):
