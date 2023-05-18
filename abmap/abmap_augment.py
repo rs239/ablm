@@ -223,7 +223,7 @@ class ProteinEmbedding:
             
 
 def augment_from_fasta(fastaPath, outputPath, chain_type, embed_type,
-                       num_mutations, separators, cdr_masks,
+                       num_mutations, separators=False, cdr_masks=True,
                        device=0, verbose=False):
     """
     Embed sequences with existing PLMs and augment with mutagenesis & CDR isolation
@@ -240,7 +240,7 @@ def augment_from_fasta(fastaPath, outputPath, chain_type, embed_type,
 
     reload_models_to_device(device, embed_type)
 
-    use_cuda = (device >= 0) and torch.cuda.is_available()
+    use_cuda = isinstance(device, int) and torch.cuda.is_available()
     if use_cuda:
         torch.cuda.set_device(device)
         if verbose:
@@ -266,7 +266,7 @@ def augment_from_fasta(fastaPath, outputPath, chain_type, embed_type,
             fname = os.path.join(outputPath, f'{name}.p')
             if not os.path.isfile(fname):
             # if name not in h5fi:
-                prot = ProteinEmbedding(seq, chain_type, embed_device=f'cuda:{device}', dev=device)
+                prot = ProteinEmbedding(seq, chain_type, embed_device=f'cuda:{device}' if use_cuda else device, dev=device)
                 if num_mutations > 0:
                     z = prot.create_cdr_specific_embedding(embed_type, num_mutations,
                                                                         separators, cdr_masks)

@@ -389,9 +389,13 @@ class BrineyPredictor(nn.Module):
         return torch.squeeze(x)
 
 
-class BrineyPredictorAttn(nn.Module):
+class PropertyPredictorAttn(nn.Module):
+    '''
+    For predicting properties. 
+    If you're interested in change in free energy (ddG), use ddGPredictor.
+    '''
     def __init__(self, input_dim = 512, mid_dim1 = 128, mid_dim2 = 32, mid_dim3 = 8):
-        super(BrineyPredictorAttn, self).__init__()
+        super(PropertyPredictorAttn, self).__init__()
 
         self.activation = nn.LeakyReLU()
 
@@ -427,15 +431,26 @@ class BrineyPredictorAttn(nn.Module):
         return x
 
 
+class BrineyPredictorAttn(PropertyPredictorAttn):
+    def __init__(self):
+        super(PropertyPredictorAttn, self).__init__()
+    
+    
 
 def init_weights(m):
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight, gain=0.01)
 
-class DesautelsPredictor(nn.Module):
+
+
+class ddGPredictor(nn.Module):
+    '''
+    For predicting properties in which variants should be compared to a wildtype. 
+    For example, ddG is change in free energy, a difference between WT and a variant
+    '''
     def __init__(self, input_dim = 400, mid_dim = 64, embed_dim = 50, hidden_dim = 50, 
-                 output_dim = 5, dropout= 0.3, baseline = False, num_heads=16):
-        super(DesautelsPredictor, self).__init__()
+                 output_dim = 1, dropout= 0.3, baseline = False, num_heads=16):
+        super(ddGPredictor, self).__init__()
         self.activation = nn.LeakyReLU()
         num_enc_layers = 1
 
@@ -461,6 +476,7 @@ class DesautelsPredictor(nn.Module):
 
 
     def attention(self, x, chain_type):
+        # Choose correct model (H or L, corresponding to heavy or light chain)
         if chain_type == 'H':
             mha = self.attention_H
         else:
@@ -471,12 +487,16 @@ class DesautelsPredictor(nn.Module):
 
         output = mha(x)
 
+        # Mean pooling: Average over sequence dimension
         pooled_output = torch.mean(output, dim=1)
 
         return pooled_output
 
     def forward(self, h, wt_h, l, wt_l):
-
+        '''
+        ddG prediction takes the difference between a variant embedding 
+        and its wildtype embeddings, but for VH and VL
+        '''
         if torch.isnan(h).any() or torch.isnan(wt_h).any() or torch.isnan(l).any() or torch.isnan(wt_l).any():
             raise ValueError
 
@@ -487,3 +507,13 @@ class DesautelsPredictor(nn.Module):
 
         output = self.predictor(x)
         return output
+    
+    
+
+class DesautelsPredictor(nn.Module):
+    def __init__(self, input_dim = 400, mid_dim = 64, embed_dim = 50, hidden_dim = 50, 
+                 output_dim = 5, dropout= 0.3, baseline = False, num_heads=16):
+        # Inherit from ddG Predictor with 5 output dimensions
+        super(ddGPredictor, self).__init__(output_dim=output_dim)
+        
+    

@@ -47,7 +47,8 @@ def evaluate_spearman(pred, target):
 
 
 def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
-                     anarci_dir='../data/anarci_files'):
+                     anarci_dir='../data/anarci_files', verbose=False):
+    # TODO: add support for a batch of sequences (e.g. as fasta file or iterable)
     chothia_nums = {'H': [[26, 32], [52, 56], [96, 101]],
                     'L': [[26, 32], [50, 52], [91, 96]]}
 
@@ -81,21 +82,24 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
     if not os.path.isdir(anarci_dir):
         os.makedirs(anarci_dir)
     
+    
+    
+    # Output ANARCI file for an individual sequence
     temp_name = os.path.join(anarci_dir, 'temp{}'.format(dev))
-    print(temp_name)
-    print(f'Sequence: {sequence}')
-    print(f'scheme: {scheme}')
-
     os.system('ANARCI -i {} --csv -o {} -s {}'.format(sequence, temp_name, scheme))
+    # NOTE - add verbose option?
+    # print(temp_name)
+    # print(f'Sequence: {sequence}')
+    # print(f'scheme: {scheme}')
     
     ### debug!
     # print("chain_type variable:", chain_type)
 
-    regions = all_regions[chain_type]
+    # Find filename of ANARCI output
     if chain_type == 'H':
-        file_name = glob.glob(anarci_dir+'/'+'*{}_H.csv'.format(dev))[0]
+        file_name = glob.glob(os.path.join(anarci_dir, f'*{dev}_H.csv'))[0]
     else:
-        file_name = glob.glob(anarci_dir+'/'+'*{}_KL.csv'.format(dev))[0]
+        file_name = glob.glob(os.path.join(anarci_dir, f'*{dev}_KL.csv'))[0]
 
     try:
         temp = pd.read_csv(file_name)
@@ -120,6 +124,8 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
 
     cdr_mask = torch.zeros(len(sequence))
 
+
+    regions = all_regions[chain_type]
     seqstart_idx = df.iloc[0]['seqstart_index']
     for r, (start_val, end_val) in enumerate(regions):
         start_pointer, end_pointer = start_val, end_val
