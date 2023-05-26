@@ -80,15 +80,18 @@ def load_abmap(pretrained_path, plm_name, device=0):
     if plm_name == 'beplerberger':
         pretrained = AbMAPAttn(embed_dim=2200, mid_dim2=1024, mid_dim3=512, 
                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(dev)
-    if plm_name == 'protbert':
+    elif plm_name == 'protbert':
         pretrained = AbMAPAttn(embed_dim=1024, mid_dim2=512, mid_dim3=256, 
                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(dev)
-    if plm_name in ['esm1b', 'esm2']:
+    elif plm_name in ['esm1b', 'esm2']:
         pretrained = AbMAPAttn(embed_dim=1280, mid_dim2=512, mid_dim3=256, 
                                      proj_dim=252, num_enc_layers=1, num_heads=16).to(dev)
-    if plm_name == 'tape':
+    elif plm_name == 'tape':
         pretrained = AbMAPAttn(embed_dim=768, mid_dim2=256, mid_dim3=128, 
                                      proj_dim=60, num_enc_layers=1, num_heads=8).to(dev)
+    else:
+        raise ValueError(f"No such PLM named {plm_name}")
+    
     checkpoint = torch.load(pretrained_path, map_location=dev)
     if 'model_state_dict' in checkpoint:
         pretrained.load_state_dict(checkpoint['model_state_dict'])
