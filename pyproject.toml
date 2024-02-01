@@ -13,3 +13,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[project.scripts]
+abmap = "abmap.__main__:main"
