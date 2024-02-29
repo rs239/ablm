@@ -1,6 +1,6 @@
 [project]
 name = "abmap"
-version = "0.1.4"
+version = "0.1.5"
 authors = [
   { name="Chiho Im", email="chihoim@mit.edu" },
   { name="Rohit Singh", email="rohitsingh@gmail.com" }
@@ -13,3 +13,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[project.scripts]
+abmap = "abmap.__main__:main"

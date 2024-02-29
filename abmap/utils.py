@@ -5,12 +5,13 @@ from tqdm import tqdm
 import glob
 import os
 import pickle
+import subprocess as sp
 from scipy.stats import spearmanr
 from matplotlib import pyplot as plt
 import time, tempfile, json
 from Bio import SeqIO
 from datetime import datetime
-
+from tempfile import NamedTemporaryFile
 
 def log(m, file=None, timestamped=True, print_also=False):
     curr_time = f"[{datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}] "
@@ -79,33 +80,38 @@ def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
     # change temp_path to a folder you'd like to save your ANARCI file to
     # temp_path = "/net/scratch3.mit.edu/scratch3-3/chihoim/misc/temp{}".format(fold)
 
-    if not os.path.isdir(anarci_dir):
-        os.makedirs(anarci_dir)
+    # if not os.path.isdir(anarci_dir):
+        # os.makedirs(anarci_dir)
     
+    with NamedTemporaryFile(delete=False) as tmpfile:
     
-    
-    # Output ANARCI file for an individual sequence
-    temp_name = os.path.join(anarci_dir, 'temp{}'.format(dev))
-    os.system('ANARCI -i {} --csv -o {} -s {}'.format(sequence, temp_name, scheme))
-    # NOTE - add verbose option?
-    # print(temp_name)
-    # print(f'Sequence: {sequence}')
-    # print(f'scheme: {scheme}')
-    
-    ### debug!
-    # print("chain_type variable:", chain_type)
+        print("DEBUG01:")
+        print(tmpfile.name)
+        cmd = 'ANARCI -i {} -o {} -s {} --csv'.format(sequence, tmpfile.name, scheme)
+        print("DEBUG02:")
+        print(cmd)
+        proc = sp.Popen(cmd.split(), stdout=sp.PIPE, stderr=sp.PIPE)
+        out, err = proc.communicate()
+        print("DEBUG02:")
+        print(out)
+        print(err)
+        
+        assert os.path.exists(tmpfile.name)
+        assert os.path.exists(f'{tmpfile.name}_H.csv')
+        os.listdir("/tmp/")
 
-    # Find filename of ANARCI output
-    if chain_type == 'H':
-        file_name = glob.glob(os.path.join(anarci_dir, f'*{dev}_H.csv'))[0]
-    else:
-        file_name = glob.glob(os.path.join(anarci_dir, f'*{dev}_KL.csv'))[0]
+        # Find filename of ANARCI output
+        if chain_type == 'H':
+            file_name = f'{tmpfile.name}_H.csv'
+        else:
+            file_name = f'{tmpfile.name}_KL.csv'
 
-    try:
-        temp = pd.read_csv(file_name)
-    except:
-        print("Can't READ this file! file name is: {}".format(file_name))
-        raise ValueError
+        try:
+            temp = pd.read_csv(file_name)
+        except:
+            print("Can't READ this file! file name is: {}".format(file_name))
+            raise ValueError
+            
     df = pd.DataFrame(temp)
 
     df = df.drop(columns=df.columns[(df == '-').any()])
