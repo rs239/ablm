@@ -1,6 +1,6 @@
 [project]
 name = "abmap"
-version = "0.1.5"
+version = "0.1.6"
 authors = [
   { name="Chiho Im", email="chihoim@mit.edu" },
   { name="Rohit Singh", email="rohitsingh@gmail.com" }
@@ -16,3 +16,7 @@ classifiers = [
 
 [project.scripts]
 abmap = "abmap.__main__:main"
+
+[tool.setuptools.package-data]
+abmap = ["*.hmm", "*.hmm.h3f", "*.hmm.h3i", "*.hmm.h3m", "*.hmm.h3p"]
+

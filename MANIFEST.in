@@ -1,1 +1,2 @@
 include LICENSE
+include abmap/modified_anarci/anarci/dat/HMMs/ALL*

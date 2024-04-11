@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import torch
 from tqdm import tqdm
+import re
 import glob
 import os
 import pickle
@@ -12,6 +13,8 @@ import time, tempfile, json
 from Bio import SeqIO
 from datetime import datetime
 from tempfile import NamedTemporaryFile
+import sys
+from abmap.modified_anarci.sequence_utils import get_anarci_pos
 
 def log(m, file=None, timestamped=True, print_also=False):
     curr_time = f"[{datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}] "
@@ -46,8 +49,92 @@ def evaluate_spearman(pred, target):
     return rho
 
 
+def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0, verbose=False):
+    
+    chothia_nums = {'H': [[26, 32], [52, 56], [96, 101]],
+                    'L': [[26, 32], [50, 52], [91, 96]]}
 
-def get_boolean_mask(sequence, chain_type, scheme, buffer_region, dev, fold=0,
+    # chothia_nums2 = {'H': [[26, 32], [52, 56], [95, 102]],
+    #                  'L': [[24, 34], [50, 56], [89, 97]]}
+
+    chothia_nums2 = {'H': [[24, 34], [50, 58], [94, 103]],
+                     'L': [[24, 34], [48, 54], [89, 98]]}
+
+    imgt_nums = {'H': [(26, 33), (51, 56), (93, 102)],
+                 'L': [(27, 32), (50, 51), (89, 97)]}
+    
+    if scheme == 'chothia':
+        all_regions = chothia_nums2
+    elif scheme == 'imgt':
+        all_regions = imgt_nums
+    else:
+        print("Such numbering does NOT exist!")
+        raise NotImplementedError
+        
+    # increase each CDR region by 1 at each end if buffer_region
+    if buffer_region:
+        for c_type in all_regions.keys():
+            for i, cdr_region in enumerate(all_regions[c_type]):
+                all_regions[c_type][i][0] -= 1
+                all_regions[c_type][i][1] += 1
+                
+    anarci_numbering = get_anarci_pos(sequence, return_chain_type=False, scheme=scheme)
+    cdr_mask = torch.zeros(len(sequence))
+    
+    regions = all_regions[chain_type]
+    for r, (start_val, end_val) in enumerate(regions):
+        
+        for seqi, numb in enumerate(anarci_numbering):
+            
+            try:
+                numb_search = re.search("(\d+).*", numb)
+                if numb_search is not None:
+                    scheme_numb = int(numb_search.group(1))
+                    if (scheme_numb >= start_val) & (scheme_numb <= end_val):
+                        cdr_mask[seqi] = r+1
+            except ValueError:
+                print(anarci_numbering, numb)
+            
+        
+#         start_pointer, end_pointer = start_val, end_val
+
+#         found = False
+#         while not found:
+#             if str(start_pointer) in seq_list:
+#                 h_cdr_start = seqstart_idx + seq_list.index(str(start_pointer))
+#                 found = True
+#             else:
+#                 start_pointer += 1
+#                 if start_pointer >= end_val:
+#                     print("Region seems invalid!")
+#                     print("ANARCI list:", seq_list)
+#                     raise ValueError
+
+#         found = False
+#         while not found:
+#             if str(end_pointer) in seq_list:
+#                 h_cdr_end = seqstart_idx + seq_list.index(str(end_pointer))
+#                 found = True
+#             else:
+#                 end_pointer -= 1
+#                 if end_pointer <= start_val:
+#                     print("Region seems invalid!")
+#                     print("ANARCI list:", seq_list)
+#                     raise ValueError
+
+        # cdr_mask[h_cdr_start : h_cdr_end + 1] = r+1
+        
+    # print(sequence)
+    # print(anarci_numbering)
+    # print(cdr_mask)
+    # sys.exit(1)
+        
+    return cdr_mask
+        
+        
+
+
+def get_boolean_mask_OLD(sequence, chain_type, scheme, buffer_region, dev, fold=0,
                      anarci_dir='../data/anarci_files', verbose=False):
     # TODO: add support for a batch of sequences (e.g. as fasta file or iterable)
     chothia_nums = {'H': [[26, 32], [52, 56], [96, 101]],
