@@ -24,6 +24,7 @@ pip install git+https://github.com/rs239/ablm.git  # the live main branch
 ### Usage:
 After installation, AbMAP can be easily imported into your python projects or run from the command line. Please see [examples/demo.ipynb](examples/demo.ipynb/) for common use cases. Instructions for running via CLI are below.
 
+<!--
 ## Command Line Usage 
 *Instructions In Progress*
 
@@ -33,6 +34,8 @@ Given a sequence, generate a foundational PLM embedding augmented with in-silico
 Given a dataset of labeled pairs of sequences and their augmented embeddings, train the AbMAP model on downstream prediction tasks.
 ### Embed
 Given fasta sequences and a pre-trained AbMAP model, generate their AbMAP embeddings (fixed or variable).
+-->
 
+### Reference
 Please provide feedback on the issues page or by opening a pull request. If AbMAP is useful in your work, please consider citing our [bioRxiv preprint](https://www.biorxiv.org/content/10.1101/2023.04.26.538476). 
 
