@@ -8,7 +8,8 @@ This repository contains code and pre-trained model checkpoints for AbMAP, a Pro
 ### Installation
 AbMAP relies on ANARCI to assign IMGT labels to antibody sequences. Please see the [ANARCI](https://github.com/oxpig/ANARCI/blob/master/INSTALL) repo or run the following in a new conda environment: 
 ```bash
-conda install -c biocore hmmer # Can also install using `brew/port/apt/yum install hmmer`
+conda install -c conda-forge biopython -y
+conda install -c bioconda hmmer=3.3.2 -y
 git clone https://github.com/oxpig/ANARCI.git
 cd ANARCI
 python setup.py install
