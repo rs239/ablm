@@ -22,7 +22,7 @@ pip install git+https://github.com/rs239/ablm.git  # the live main branch
 ```
 
 ### Usage:
-After installation, AbMAP can be easily imported into your python projects or run from the command line. Please see [examples/demo.ipynb](examples/demo.ipynb/) for common use cases. Instructions for running via CLI are below.
+After installation, AbMAP can be easily imported into your python projects or run from the command line. Please see [examples/demo.ipynb](examples/demo.ipynb/) for common use cases. <!--Instructions for running via CLI are below.-->
 
 <!--
 ## Command Line Usage 
