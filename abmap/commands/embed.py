@@ -26,7 +26,7 @@ class EmbedArguments(NamedTuple):
     pretrained_path: str
     input_path: str
     variable_length: bool
-    task: int
+    task: str
     func: Callable[[EmbedArguments], None]
 
 
@@ -63,8 +63,8 @@ def add_args(parser):
         help="Output variable length AbMAP Embeddings. (Default: Fixed Length)"
     )
     parser.add_argument(
-        "--task", type=int, default='structure', choices=['structure', 'function'],
-        help="Which task to be specified for generating the embedding (0: structure or 1: function). Default: 0"
+        "--task", type=str, default='structure', choices=['structure', 'function'],
+        help="Which task to be specified for generating the embedding (choices: ['structure', 'function']). Default: structure"
     )
     return parser
 
@@ -149,8 +149,8 @@ def abmap_embed(device, pretrained_path, chain_type, input_file, output_dir, var
         NO separators
         # mutations = 100
     """
-    embed_type = 'beplerberger'
-    task_ = 'structure' if task == 0 else 'function'
+    embed_type = plm_name
+    task_ = task
     output_type = 'variable' if variable_length else 'fixed'
     
     pretrained = load_abmap(pretrained_path, plm_name, device)
