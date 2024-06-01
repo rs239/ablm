@@ -19,4 +19,3 @@ abmap = "abmap.__main__:main"
 
 [tool.setuptools.package-data]
 abmap = ["*.hmm", "*.hmm.h3f", "*.hmm.h3i", "*.hmm.h3m", "*.hmm.h3p"]
-
